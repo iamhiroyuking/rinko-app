@@ -45,9 +45,16 @@ Unit:    id, seminar_id, order, title, objective, presenter_id,
 ## 進行状況・次のステップ
 - [x] アイデア確定（案A: 輪講アプリ）
 - [x] 要件定義・MVP機能・軽量データモデル定義（`docs/requirements.md`）
-- [ ] 画面遷移図（ユーザーが手を動かして整理中。ここから機能要件・技術スタックの見直しが発生する見込み）
+- [x] 画面遷移図（9画面を確定。`docs/screen-flow.md` とクリッカブルデモ `docs/prototype/screen-flow-demo.html`）
+- [ ] デモを元にした機能要件の洗い出しと `docs/requirements.md` の改訂
+- [ ] データの保存先の決定（localStorageのみ / BaaS / 自前バックエンド）← 規模を決める最重要判断
 - [ ] 技術スタック選定（TypeScript/JavaScriptを軽く調査中、未確定）
 - [ ] 極小プロトタイプ（画面1枚が動く最小コード）
+
+### 未解決の設計論点（詳細は `docs/screen-flow.md`）
+- ログ機能が `requirements.md` のMVP範囲（`Exercise` を作らない方針）を超えている。範囲を広げるか縮小するか未決着
+- メンバー招待・権限管理、編集・削除の導線が未設計
+- レスポンシブ方針（主な利用端末）が未決定
 
 ## 開発の進め方の方針
 - Issueで機能単位のタスクを管理
