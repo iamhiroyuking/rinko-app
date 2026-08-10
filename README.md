@@ -38,6 +38,20 @@ npm run dev
 | `npm run lint`   | コードの誤りを検査する（oxlint） |
 | `npm run format` | コードを整形する（Prettier）     |
 
+### データベース（Supabase）
+
+1. [supabase.com](https://supabase.com) でプロジェクトを作る
+2. `cp .env.example .env` して、ダッシュボードの Project Settings > API から URL と anon key を書き写す
+3. ローカルのリポジトリをプロジェクトに紐付けてスキーマを適用する
+
+```bash
+supabase link --project-ref <プロジェクトのref>
+supabase db push
+```
+
+スキーマの変更は `supabase/migrations/` にSQLファイルとして残す。
+直接ダッシュボードでテーブルをいじると履歴が残らないので行わない。
+
 ## ディレクトリ構成
 
 ```
