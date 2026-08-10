@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>輪講アプリ 画面遷移デモ</title>
+<style>*{margin:0;padding:0;}body{margin:0;}</style>
+</head>
+<body>
+<style>
+  :root{
+    --paper:#EDF1EC;
+    --surface:#FFFFFF;
+    --surface-2:#F4F7F3;
+    --ink:#1B231E;
+    --ink-muted:#5C6961;
+    --line:#D8DFD7;
+    --accent:#2E6355;
+    --accent-ink:#FFFFFF;
+    --amber:#B9762A;
+    --amber-bg:#F3E4CE;
+    --amber-ink:#6B4415;
+    --status-todo-bg:#E7EAE6;
+    --status-todo-ink:#5C6961;
+    --status-progress-bg:#F5E3C8;
+    --status-progress-ink:#7A4E14;
+    --status-done-bg:#DCEAE3;
+    --status-done-ink:#1F5B49;
+    --danger:#A6543D;
+    --danger-bg:#F3E1DA;
+    --shadow:0 14px 32px -14px rgba(20,30,24,.35);
+    --bezel:#1E2420;
+    --bezel-2:#0E120F;
+    --focus:#2E6355;
+
+    --font-ui:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP","Segoe UI",sans-serif;
+    --font-mono:ui-monospace,"SF Mono","SFMono-Regular",Menlo,Consolas,monospace;
+
+    --fs-2xs:.6875rem;
+    --fs-xs:.75rem;
+    --fs-sm:.8125rem;
+    --fs-base:.9375rem;
+    --fs-md:1.0625rem;
+    --fs-lg:1.375rem;
+    --fs-xl:1.75rem;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#111611;
+      --surface:#182019;
+      --surface-2:#1E2720;
+      --ink:#E7ECE6;
+      --ink-muted:#93A099;
+      --line:#2A342C;
+      --accent:#6FAE93;
+      --accent-ink:#0D1611;
+      --amber:#E3A857;
+      --amber-bg:#3A2C14;
+      --amber-ink:#F0D5A3;
+      --status-todo-bg:#232B24;
+      --status-todo-ink:#93A099;
+      --status-progress-bg:#3A2C14;
+      --status-progress-ink:#E3A857;
+      --status-done-bg:#1C3A2E;
+      --status-done-ink:#6FAE93;
+      --danger:#D98266;
+      --danger-bg:#3A241C;
+      --shadow:0 14px 32px -14px rgba(0,0,0,.6);
+      --bezel:#0B0D0B;
+      --bezel-2:#000000;
+      --focus:#6FAE93;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#111611; --surface:#182019; --surface-2:#1E2720; --ink:#E7ECE6; --ink-muted:#93A099;
+    --line:#2A342C; --accent:#6FAE93; --accent-ink:#0D1611; --amber:#E3A857; --amber-bg:#3A2C14;
+    --amber-ink:#F0D5A3; --status-todo-bg:#232B24; --status-todo-ink:#93A099; --status-progress-bg:#3A2C14;
+    --status-progress-ink:#E3A857; --status-done-bg:#1C3A2E; --status-done-ink:#6FAE93; --danger:#D98266;
+    --danger-bg:#3A241C; --shadow:0 14px 32px -14px rgba(0,0,0,.6); --bezel:#0B0D0B; --bezel-2:#000000; --focus:#6FAE93;
+  }
+  :root[data-theme="light"]{
+    --paper:#EDF1EC; --surface:#FFFFFF; --surface-2:#F4F7F3; --ink:#1B231E; --ink-muted:#5C6961;
+    --line:#D8DFD7; --accent:#2E6355; --accent-ink:#FFFFFF; --amber:#B9762A; --amber-bg:#F3E4CE;
+    --amber-ink:#6B4415; --status-todo-bg:#E7EAE6; --status-todo-ink:#5C6961; --status-progress-bg:#F5E3C8;
+    --status-progress-ink:#7A4E14; --status-done-bg:#DCEAE3; --status-done-ink:#1F5B49; --danger:#A6543D;
+    --danger-bg:#F3E1DA; --shadow:0 14px 32px -14px rgba(20,30,24,.35); --bezel:#1E2420; --bezel-2:#0E120F; --focus:#2E6355;
+  }
+
+  *{box-sizing:border-box;}
+  .stage{
+    font-family:var(--font-ui);
+    color:var(--ink);
+    background:var(--paper);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:1.25rem;
+    padding:2rem 1rem 3rem;
+  }
+  .chrome{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:.4rem;
+    text-align:center;
+  }
+  .chrome-eyebrow{
+    font-family:var(--font-mono);
+    font-size:var(--fs-2xs);
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--ink-muted);
+  }
+  .chrome-title{
+    font-size:var(--fs-lg);
+    font-weight:700;
+    text-wrap:balance;
+  }
+  .chrome-badge{
+    margin-top:.35rem;
+    font-family:var(--font-mono);
+    font-size:var(--fs-2xs);
+    letter-spacing:.06em;
+    color:var(--accent);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:.3rem .75rem;
+  }
+
+  .phone-wrap{
+    width:min(390px,94vw);
+  }
+  .phone{
+    position:relative;
+    width:100%;
+    aspect-ratio:390/844;
+    background:var(--bezel);
+    border-radius:2.75rem;
+    padding:.55rem;
+    box-shadow:var(--shadow);
+  }
+  .phone-notch{
+    position:absolute;
+    top:.55rem; left:50%; transform:translateX(-50%);
+    width:34%; height:1.4rem;
+    background:var(--bezel-2);
+    border-radius:0 0 1rem 1rem;
+    z-index:5;
+  }
+  .phone-screen{
+    position:relative;
+    width:100%; height:100%;
+    background:var(--paper);
+    border-radius:2.1rem;
+    overflow:hidden;
+  }
+
+  .screen{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    opacity:0; transform:translateX(6px);
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  .screen.active{ opacity:1; transform:translateX(0); pointer-events:auto; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.6rem 1rem .7rem;
+    flex-shrink:0;
+  }
+  .topbar h1{ font-size:var(--fs-md); font-weight:700; margin:0; text-wrap:balance; }
+  .icon-btn{
+    width:2.1rem; height:2.1rem;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--line); border-radius:999px;
+    color:var(--ink); font-size:1rem; cursor:pointer; flex-shrink:0;
+  }
+  .icon-btn:hover{ border-color:var(--accent); }
+  .icon-btn:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--focus); outline-offset:2px;
+  }
+  .back-btn{
+    display:flex; align-items:center; gap:.25rem;
+    background:none; border:none; color:var(--ink); font-size:var(--fs-base);
+    font-family:var(--font-ui); cursor:pointer; padding:.2rem .3rem .2rem 0;
+  }
+
+  .scroll-area{ flex:1; overflow-y:auto; padding:0 1rem 1.4rem; }
+
+  /* ---- Start screen ---- */
+  #screen-start{ align-items:center; justify-content:center; text-align:center; gap:1rem; }
+  .start-mark{
+    width:4.5rem;height:4.5rem;border-radius:1.4rem;
+    background:var(--accent); color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-size:1.9rem;
+    box-shadow:var(--shadow);
+  }
+  .start-title{ font-size:var(--fs-xl); font-weight:800; letter-spacing:.02em; }
+  .start-sub{ font-size:var(--fs-sm); color:var(--ink-muted); max-width:16rem; }
+  .primary-btn{
+    margin-top:.6rem;
+    background:var(--accent); color:var(--accent-ink);
+    border:none; border-radius:999px; padding:.75rem 1.6rem;
+    font-size:var(--fs-base); font-weight:700; font-family:var(--font-ui);
+    cursor:pointer;
+  }
+  .primary-btn:hover{ filter:brightness(1.05); }
+
+  /* ---- Home ---- */
+  .book-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:1rem;
+    padding:.9rem 1rem; margin-bottom:.75rem; cursor:pointer; text-align:left;
+    width:100%; font-family:var(--font-ui); color:var(--ink);
+  }
+  .book-card:hover{ border-color:var(--accent); }
+  .book-card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; }
+  .book-card-title{ font-size:var(--fs-md); font-weight:700; text-wrap:balance; }
+  .book-card-meta{ font-size:var(--fs-2xs); color:var(--ink-muted); margin-top:.15rem; }
+  .progress-track{
+    height:.35rem; border-radius:999px; background:var(--surface-2); margin-top:.6rem; overflow:hidden;
+  }
+  .progress-fill{ height:100%; background:var(--accent); border-radius:999px; }
+  .book-card-bottom{ display:flex; align-items:center; justify-content:space-between; margin-top:.55rem; }
+  .book-card-next{ font-size:var(--fs-2xs); color:var(--ink-muted); }
+
+  .pill{
+    font-size:var(--fs-2xs); font-weight:700; padding:.2rem .55rem; border-radius:999px;
+    letter-spacing:.02em; white-space:nowrap; border:none; font-family:var(--font-ui);
+  }
+  .pill.status-not_started{ background:var(--status-todo-bg); color:var(--status-todo-ink); }
+  .pill.status-in_progress{ background:var(--status-progress-bg); color:var(--status-progress-ink); }
+  .pill.status-done{ background:var(--status-done-bg); color:var(--status-done-ink); }
+  .pill-btn{ cursor:pointer; }
+
+  .avatar-row{ display:flex; margin-top:.6rem; }
+  .avatar{
+    width:1.5rem;height:1.5rem;border-radius:999px;background:var(--surface-2);
+    border:2px solid var(--surface); color:var(--ink-muted);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.6rem; font-weight:700; margin-left:-.4rem;
+  }
+  .avatar:first-child{ margin-left:0; }
+
+  .empty-state{ text-align:center; color:var(--ink-muted); font-size:var(--fs-sm); padding:2.5rem 1rem; }
+
+  /* ---- Seminar ---- */
+  .seminar-info{
+    background:var(--surface-2); border-radius:.9rem; padding:.8rem .9rem; margin:0 1rem .9rem;
+    flex-shrink:0;
+  }
+  .seminar-info-title{ font-size:var(--fs-sm); font-weight:700; }
+  .seminar-info-sub{ font-size:var(--fs-2xs); color:var(--ink-muted); margin-top:.15rem; }
+  .unit-row{
+    display:flex; align-items:center; gap:.65rem;
+    background:var(--surface); border:1px solid var(--line); border-radius:.85rem;
+    padding:.7rem .8rem; margin-bottom:.55rem; cursor:pointer; width:100%; text-align:left;
+    font-family:var(--font-ui); color:var(--ink);
+  }
+  .unit-row:hover{ border-color:var(--accent); }
+  .unit-order{
+    font-family:var(--font-mono); font-size:var(--fs-2xs); color:var(--ink-muted);
+    width:2.1rem; flex-shrink:0;
+  }
+  .unit-main{ flex:1; min-width:0; }
+  .unit-title{ font-size:var(--fs-base); font-weight:700; text-wrap:balance; }
+  .unit-meta{ font-size:var(--fs-2xs); color:var(--ink-muted); margin-top:.1rem; display:flex; gap:.4rem; align-items:center; }
+  .review-flag{ color:var(--danger); }
+
+  .fab{
+    position:absolute; right:1rem; bottom:1.1rem;
+    background:var(--accent); color:var(--accent-ink); border:none; border-radius:999px;
+    padding:.75rem 1.1rem; font-size:var(--fs-sm); font-weight:700; font-family:var(--font-ui);
+    display:flex; align-items:center; gap:.4rem; cursor:pointer; box-shadow:var(--shadow);
+  }
+  .fab:hover{ filter:brightness(1.05); }
+
+  /* ---- Unit ---- */
+  .objective-card{
+    background:var(--amber-bg); color:var(--amber-ink); border-radius:.85rem;
+    padding:.75rem .9rem; margin:0 1rem .7rem; font-size:var(--fs-sm); flex-shrink:0;
+  }
+  .objective-label{ font-size:var(--fs-2xs); text-transform:uppercase; letter-spacing:.06em; font-weight:700; opacity:.75; margin-bottom:.2rem; }
+  .unit-meta-row{
+    display:flex; align-items:center; justify-content:space-between; margin:0 1rem .8rem; flex-shrink:0;
+  }
+  .unit-meta-left{ display:flex; align-items:center; gap:.4rem; font-size:var(--fs-2xs); color:var(--ink-muted); }
+  .unit-status-wrap{ text-align:right; }
+  .unit-status-hint{ display:block; font-size:.6rem; color:var(--ink-muted); margin-top:.2rem; }
+
+  .log-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:.85rem;
+    padding:.7rem .85rem; margin-bottom:.6rem; transition:background-color .5s ease;
+  }
+  .log-card.flash{ background:var(--amber-bg); border-color:var(--amber); }
+  .log-head{ display:flex; align-items:center; gap:.45rem; }
+  .log-author{ font-size:var(--fs-sm); font-weight:700; }
+  .log-page{ font-family:var(--font-mono); font-size:var(--fs-2xs); color:var(--ink-muted); }
+  .log-ts{ margin-left:auto; font-size:var(--fs-2xs); color:var(--ink-muted); }
+  .log-content{ font-size:var(--fs-sm); margin-top:.35rem; line-height:1.5; }
+  .tag-row{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
+  .tag-chip{
+    font-size:var(--fs-2xs); background:var(--amber-bg); color:var(--amber-ink);
+    padding:.15rem .5rem; border-radius:999px; font-weight:600;
+  }
+
+  /* ---- Search ---- */
+  .search-bar-wrap{ padding:0 1rem .7rem; flex-shrink:0; }
+  .search-input{
+    width:100%; background:var(--surface); border:1px solid var(--line); border-radius:.85rem;
+    padding:.6rem .8rem; font-size:var(--fs-base); font-family:var(--font-ui); color:var(--ink);
+  }
+  .search-input::placeholder{ color:var(--ink-muted); }
+  .tag-cloud-label{ font-size:var(--fs-2xs); color:var(--ink-muted); text-transform:uppercase; letter-spacing:.05em; margin:0 1rem .45rem; flex-shrink:0; }
+  .tag-cloud{ display:flex; flex-wrap:wrap; gap:.4rem; padding:0 1rem .9rem; flex-shrink:0; }
+  .tag-cloud-chip{
+    font-size:var(--fs-xs); background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    padding:.3rem .65rem; border-radius:999px; cursor:pointer; font-family:var(--font-ui);
+  }
+  .tag-cloud-chip:hover{ border-color:var(--amber); color:var(--amber-ink); background:var(--amber-bg); }
+  .result-row{
+    display:block; width:100%; text-align:left; background:var(--surface); border:1px solid var(--line);
+    border-radius:.85rem; padding:.7rem .85rem; margin-bottom:.55rem; cursor:pointer; font-family:var(--font-ui); color:var(--ink);
+  }
+  .result-row:hover{ border-color:var(--accent); }
+  .result-top{ display:flex; align-items:center; gap:.4rem; font-size:var(--fs-2xs); color:var(--ink-muted); }
+  .result-excerpt{ font-size:var(--fs-sm); margin-top:.3rem; line-height:1.5; }
+  .result-excerpt mark{ background:var(--amber-bg); color:var(--amber-ink); border-radius:.2rem; padding:0 .1rem; }
+  .search-hint{ text-align:center; color:var(--ink-muted); font-size:var(--fs-sm); padding:2rem 1rem; }
+
+  /* ---- Sheets (modals) ---- */
+  .sheet-backdrop{
+    position:absolute; inset:0; background:rgba(10,14,11,.45);
+    opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:20;
+  }
+  .sheet-backdrop.open{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; max-height:88%;
+    background:var(--surface); border-radius:1.3rem 1.3rem 0 0;
+    padding:1.1rem 1.1rem 1.3rem; box-shadow:var(--shadow);
+    transform:translateY(100%); transition:transform .26s ease;
+    display:none; flex-direction:column; overflow:hidden;
+  }
+  .sheet.open{ display:flex; transform:translateY(0); }
+  .sheet-handle{ width:2.2rem; height:.28rem; background:var(--line); border-radius:999px; margin:0 auto .8rem; flex-shrink:0; }
+  .sheet-title{ font-size:var(--fs-md); font-weight:700; margin-bottom:.85rem; flex-shrink:0; }
+  .sheet-body{ overflow-y:auto; }
+  .field{ margin-bottom:.75rem; }
+  .field label{ display:block; font-size:var(--fs-2xs); color:var(--ink-muted); margin-bottom:.3rem; font-weight:700; letter-spacing:.02em; }
+  .field input, .field textarea{
+    width:100%; background:var(--surface-2); border:1px solid var(--line); border-radius:.6rem;
+    padding:.55rem .7rem; font-size:var(--fs-base); font-family:var(--font-ui); color:var(--ink); resize:vertical;
+  }
+  .field textarea{ min-height:4.2rem; }
+  .chip-select{ display:flex; flex-wrap:wrap; gap:.4rem; }
+  .chip-select button{
+    font-family:var(--font-ui); font-size:var(--fs-sm); padding:.4rem .8rem; border-radius:999px;
+    border:1px solid var(--line); background:var(--surface-2); color:var(--ink); cursor:pointer;
+  }
+  .chip-select button.selected{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .sheet-actions{ display:flex; gap:.6rem; margin-top:.9rem; flex-shrink:0; }
+  .btn{
+    flex:1; border-radius:.65rem; padding:.65rem; font-size:var(--fs-base); font-weight:700;
+    font-family:var(--font-ui); cursor:pointer; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+  }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .summary-row{ display:flex; justify-content:space-between; font-size:var(--fs-sm); padding:.4rem 0; border-bottom:1px solid var(--line); }
+  .summary-row:last-of-type{ border-bottom:none; }
+  .summary-label{ color:var(--ink-muted); }
+
+  /* ---- Quick jump ---- */
+  .quickjump{
+    width:min(390px,94vw); background:var(--surface); border:1px solid var(--line); border-radius:1rem;
+    padding:.85rem; display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem;
+  }
+  .quickjump-title{
+    grid-column:1/-1; font-family:var(--font-mono); font-size:var(--fs-2xs); color:var(--ink-muted);
+    letter-spacing:.06em; text-transform:uppercase; margin-bottom:.15rem;
+  }
+  .quickjump button{
+    font-family:var(--font-ui); background:var(--surface-2); border:1px solid var(--line); border-radius:.6rem;
+    padding:.5rem .4rem; cursor:pointer; color:var(--ink); text-align:center; line-height:1.3;
+  }
+  .quickjump button:hover{ border-color:var(--accent); }
+  .quickjump button .qj-jp{ display:block; font-size:var(--fs-xs); font-weight:700; }
+  .quickjump button .qj-en{ display:block; font-family:var(--font-mono); font-size:.62rem; color:var(--ink-muted); margin-top:.1rem; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration:.001ms !important; animation-duration:.001ms !important; }
+  }
+</style>
+
+<div class="stage">
+  <div class="chrome">
+    <div class="chrome-eyebrow">rinko-app &mdash; screen flow demo</div>
+    <div class="chrome-title">輪講アプリ 画面遷移デモ</div>
+    <div class="chrome-badge" id="screen-badge">現在: StartView</div>
+  </div>
+
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+
+        <section class="screen active" id="screen-start">
+          <div class="start-mark">📖</div>
+          <div class="start-title">輪講</div>
+          <div class="start-sub">研究室の輪講の進捗・記録をひとつにまとめる</div>
+          <button class="primary-btn" id="start-btn">はじめる</button>
+        </section>
+
+        <section class="screen" id="screen-home">
+          <div class="topbar">
+            <button class="icon-btn" id="home-add-btn" aria-label="輪講を追加">＋</button>
+            <h1>輪講</h1>
+            <span style="width:2.1rem"></span>
+          </div>
+          <div class="scroll-area" id="home-list"></div>
+        </section>
+
+        <section class="screen" id="screen-seminar">
+          <div class="topbar">
+            <button class="back-btn" id="seminar-back-btn">‹ 戻る</button>
+            <span class="icon-btn" style="opacity:0;pointer-events:none">‹</span>
+          </div>
+          <div class="seminar-info" id="seminar-info"></div>
+          <div class="topbar" style="padding-top:0;">
+            <h1 style="font-size:var(--fs-base);color:var(--ink-muted);">回のリスト</h1>
+            <button class="icon-btn" id="seminar-search-btn" aria-label="検索">🔍</button>
+          </div>
+          <div class="scroll-area" id="seminar-list" style="position:relative;"></div>
+          <button class="fab" id="seminar-create-btn">＋ 回を作成</button>
+        </section>
+
+        <section class="screen" id="screen-unit">
+          <div class="topbar">
+            <button class="back-btn" id="unit-back-btn">‹ 戻る</button>
+            <span class="icon-btn" style="opacity:0;pointer-events:none">‹</span>
+          </div>
+          <h1 id="unit-title" style="padding:0 1rem .5rem;font-size:var(--fs-lg);text-wrap:balance;flex-shrink:0;"></h1>
+          <div class="objective-card" id="unit-objective"></div>
+          <div class="unit-meta-row" id="unit-meta"></div>
+          <div class="scroll-area" id="unit-log-list" style="position:relative;"></div>
+          <button class="fab" id="unit-post-btn">🗨 発言する</button>
+        </section>
+
+        <section class="screen" id="screen-search">
+          <div class="topbar">
+            <button class="back-btn" id="search-back-btn">‹ 戻る</button>
+            <span class="icon-btn" style="opacity:0;pointer-events:none">‹</span>
+          </div>
+          <div class="search-bar-wrap">
+            <input class="search-input" id="search-input" type="search" placeholder="キーワード・#ハッシュタグで検索" />
+          </div>
+          <div class="tag-cloud-label">よく使うハッシュタグ</div>
+          <div class="tag-cloud" id="search-tags"></div>
+          <div class="scroll-area" id="search-results"></div>
+        </section>
+
+        <div class="sheet-backdrop" id="sheet-backdrop">
+          <form class="sheet" id="sheet-addBook" novalidate>
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">本を追加</div>
+            <div class="sheet-body">
+              <div class="field"><label for="input-book-name">輪講名</label><input id="input-book-name" required placeholder="例: パターン認識と機械学習 輪講" /></div>
+              <div class="field"><label for="input-book-material">教材名</label><input id="input-book-material" placeholder="例: Pattern Recognition and Machine Learning" /></div>
+              <div class="field"><label for="input-book-pace">目標ペース</label><input id="input-book-pace" placeholder="例: 週1回・10月末までに完了" /></div>
+              <div class="field"><label for="input-book-members">メンバー（カンマ区切り）</label><input id="input-book-members" placeholder="例: 田中, 佐藤, 鈴木" /></div>
+            </div>
+            <div class="sheet-actions">
+              <button type="button" class="btn" data-close-sheet>キャンセル</button>
+              <button type="submit" class="btn primary">作成</button>
+            </div>
+          </form>
+
+          <div class="sheet" id="sheet-bookSummary">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title" id="summary-title"></div>
+            <div class="sheet-body" id="summary-body"></div>
+            <div class="sheet-actions">
+              <button type="button" class="btn" data-close-sheet>閉じる</button>
+              <button type="button" class="btn primary" id="summary-start-btn">学習を開始する</button>
+            </div>
+          </div>
+
+          <form class="sheet" id="sheet-createUnit" novalidate>
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">回を作成</div>
+            <div class="sheet-body">
+              <div class="field"><label for="input-unit-title">タイトル</label><input id="input-unit-title" required placeholder="例: 線形識別モデル" /></div>
+              <div class="field"><label for="input-unit-objective">この回で学ぶこと</label><input id="input-unit-objective" placeholder="一言で" /></div>
+              <div class="field"><label>担当者</label><div class="chip-select" id="unit-presenter-select"></div></div>
+              <div class="field"><label for="input-unit-date">予定日</label><input id="input-unit-date" type="date" /></div>
+            </div>
+            <div class="sheet-actions">
+              <button type="button" class="btn" data-close-sheet>キャンセル</button>
+              <button type="submit" class="btn primary">作成</button>
+            </div>
+          </form>
+
+          <form class="sheet" id="sheet-addLog" novalidate>
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">発言を追加</div>
+            <div class="sheet-body">
+              <div class="field"><label>投稿者</label><div class="chip-select" id="log-author-select"></div></div>
+              <div class="field"><label for="input-log-page">ページ</label><input id="input-log-page" placeholder="例: p.47-60" /></div>
+              <div class="field"><label for="input-log-content">内容</label><textarea id="input-log-content" required placeholder="演習で気づいたこと、次回への申し送りなど"></textarea></div>
+              <div class="field"><label for="input-log-tags">ハッシュタグ（スペース区切り）</label><input id="input-log-tags" placeholder="例: 正則化 過学習" /></div>
+            </div>
+            <div class="sheet-actions">
+              <button type="button" class="btn" data-close-sheet>キャンセル</button>
+              <button type="submit" class="btn primary">保存</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="quickjump">
+    <div class="quickjump-title">画面ジャンプ（デモ操作用）</div>
+    <button data-jump="start"><span class="qj-jp">起動画面</span><span class="qj-en">StartView</span></button>
+    <button data-jump="home"><span class="qj-jp">ホーム</span><span class="qj-en">HomeView</span></button>
+    <button data-jump="addBook"><span class="qj-jp">本追加</span><span class="qj-en">AddBookView</span></button>
+    <button data-jump="bookSummary"><span class="qj-jp">本の概要</span><span class="qj-en">BookSummaryView</span></button>
+    <button data-jump="seminar"><span class="qj-jp">回のリスト</span><span class="qj-en">SeminarView</span></button>
+    <button data-jump="createUnit"><span class="qj-jp">回作成</span><span class="qj-en">CreateUnitView</span></button>
+    <button data-jump="unit"><span class="qj-jp">回ごとの記録</span><span class="qj-en">UnitView</span></button>
+    <button data-jump="addLog"><span class="qj-jp">発言追加</span><span class="qj-en">AddLogView</span></button>
+    <button data-jump="search"><span class="qj-jp">検索</span><span class="qj-en">SearchView</span></button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  function uid(prefix){ return prefix + "-" + Math.random().toString(36).slice(2,8); }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function escapeRegExp(str){ return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function reducedMotion(){ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+
+  var STATUS_LABEL = { not_started:"未着手", in_progress:"進行中", done:"完了" };
+  var STATUS_ORDER = ["not_started","in_progress","done"];
+
+  var state = {
+    screen: "start",
+    modal: null,
+    currentBookId: null,
+    currentUnitId: null,
+    summaryBookId: null,
+    createUnitPresenterId: null,
+    logAuthorId: null,
+    books: [
+      {
+        id:"b1", name:"パターン認識と機械学習 輪講", material:"Pattern Recognition and Machine Learning (PRML)",
+        pace:"週1回・10月末までに完了",
+        members:[{id:"b1-m1",name:"田中"},{id:"b1-m2",name:"佐藤"},{id:"b1-m3",name:"鈴木"},{id:"b1-m4",name:"高橋"}],
+        units:[
+          { id:"b1-u1", order:1, title:"導入と数学的準備", objective:"確率・線形代数の復習と輪講の進め方の確認",
+            presenterId:"b1-m1", plannedDate:"2026-07-10", status:"done", needsReview:false,
+            logs:[
+              { id:"b1-u1-l1", authorId:"b1-m1", page:"p.1-15", content:"多項式曲線フィッティングの例を実際に手を動かして確認した。過学習の直感がつかめた。", tags:["過学習","多項式フィッティング"], ts:"07/10" },
+              { id:"b1-u1-l2", authorId:"b1-m2", page:"p.16-20", content:"確率分布の基礎、特にベイズ的な考え方の導入部分でつまずいた人が多かったので次回簡単に復習する。", tags:["ベイズ推定","要復習"], ts:"07/10" }
+            ]},
+          { id:"b1-u2", order:2, title:"確率分布", objective:"ガウス分布・指数型分布族の性質を理解する",
+            presenterId:"b1-m2", plannedDate:"2026-07-17", status:"done", needsReview:false,
+            logs:[
+              { id:"b1-u2-l1", authorId:"b1-m2", page:"p.21-40", content:"共役事前分布の考え方を演習3を通して確認。ベイズ推定の計算がだいぶ腹落ちした。", tags:["ベイズ推定","演習3","共役事前分布"], ts:"07/17" },
+              { id:"b1-u2-l2", authorId:"b1-m3", page:"p.41-46", content:"混合ガウスモデルの直感的な説明を追加でシェア。", tags:["混合ガウス"], ts:"07/18" }
+            ]},
+          { id:"b1-u3", order:3, title:"線形回帰モデル", objective:"正則化と過学習の関係を線形回帰で確認する",
+            presenterId:"b1-m3", plannedDate:"2026-07-24", status:"in_progress", needsReview:true,
+            logs:[
+              { id:"b1-u3-l1", authorId:"b1-m3", page:"p.47-60", content:"リッジ回帰の正則化項の効果をグラフで確認。過学習との関係が視覚的に理解できた。", tags:["正則化","過学習"], ts:"07/24" }
+            ]},
+          { id:"b1-u4", order:4, title:"線形識別モデル", objective:"ロジスティック回帰とパーセプトロンの違いを整理する",
+            presenterId:"b1-m4", plannedDate:"2026-07-31", status:"not_started", needsReview:false, logs:[] },
+          { id:"b1-u5", order:5, title:"ニューラルネットワーク", objective:"誤差逆伝播の導出を追う",
+            presenterId:"b1-m1", plannedDate:"2026-08-07", status:"not_started", needsReview:false, logs:[] }
+        ]
+      },
+      {
+        id:"b2", name:"強化学習 輪講", material:"Reinforcement Learning: An Introduction",
+        pace:"隔週・12月末までに完了",
+        members:[{id:"b2-m1",name:"高橋"},{id:"b2-m2",name:"伊藤"}],
+        units:[
+          { id:"b2-u1", order:1, title:"導入と強化学習の枠組み", objective:"エージェント・環境・報酬の関係を整理する",
+            presenterId:"b2-m1", plannedDate:"2026-07-15", status:"done", needsReview:false,
+            logs:[ { id:"b2-u1-l1", authorId:"b2-m1", page:"p.1-20", content:"マルコフ性の仮定がどこまで現実に効くのか議論になった。", tags:["マルコフ性"], ts:"07/15" } ]},
+          { id:"b2-u2", order:2, title:"マルコフ決定過程", objective:"ベルマン方程式の導出を理解する",
+            presenterId:"b2-m2", plannedDate:"2026-07-29", status:"in_progress", needsReview:false, logs:[] }
+        ]
+      }
+    ]
+  };
+
+  function getBook(id){ return state.books.find(function(b){ return b.id===id; }); }
+  function getCurrentBook(){ return getBook(state.currentBookId); }
+  function getMember(book, id){ return book.members.find(function(m){ return m.id===id; }); }
+  function getUnit(book, id){ return book.units.find(function(u){ return u.id===id; }); }
+  function initials(name){ return name ? name.slice(0,1) : "?"; }
+
+  function bookProgress(book){
+    var total = book.units.length;
+    var done = book.units.filter(function(u){ return u.status==="done"; }).length;
+    return { done:done, total:total, pct: total ? Math.round(done/total*100) : 0 };
+  }
+  function bookStatusKey(book){
+    var p = bookProgress(book);
+    if(p.total===0) return "not_started";
+    if(p.done===p.total) return "done";
+    var started = book.units.some(function(u){ return u.status!=="not_started"; });
+    return started ? "in_progress" : "not_started";
+  }
+  function bookStatusLabel(book){
+    var key = bookStatusKey(book);
+    return key==="done" ? "完了" : key==="in_progress" ? "学習中" : "学習予定";
+  }
+  function bookNextUnit(book){
+    return book.units.find(function(u){ return u.status!=="done"; }) || book.units[book.units.length-1];
+  }
+
+  var SCREEN_LABELS = { start:"StartView", home:"HomeView", seminar:"SeminarView", unit:"UnitView", search:"SearchView" };
+  var MODAL_LABELS = { addBook:"AddBookView", bookSummary:"BookSummaryView", createUnit:"CreateUnitView", addLog:"AddLogView" };
+
+  function updateBadge(){
+    var el = document.getElementById("screen-badge");
+    var label = state.modal ? MODAL_LABELS[state.modal] : SCREEN_LABELS[state.screen];
+    el.textContent = "現在: " + label;
+  }
+
+  function showScreen(name){
+    state.screen = name;
+    document.querySelectorAll(".screen").forEach(function(el){
+      el.classList.toggle("active", el.id === "screen-" + name);
+    });
+    if(name==="home") renderHome();
+    if(name==="seminar") renderSeminar();
+    if(name==="unit") renderUnit();
+    if(name==="search") renderSearch();
+    updateBadge();
+  }
+
+  function openModal(type){
+    document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("open"); });
+    document.getElementById("sheet-backdrop").classList.add("open");
+    document.getElementById("sheet-" + type).classList.add("open");
+    state.modal = type;
+    if(type==="bookSummary") renderBookSummary();
+    if(type==="createUnit") renderCreateUnitForm();
+    if(type==="addLog") renderAddLogForm();
+    updateBadge();
+  }
+  function closeModal(){
+    document.getElementById("sheet-backdrop").classList.remove("open");
+    document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("open"); });
+    state.modal = null;
+    updateBadge();
+  }
+
+  function selectBookDefault(){
+    if(!state.currentBookId || !getBook(state.currentBookId)) state.currentBookId = state.books[0].id;
+  }
+  function selectUnitDefault(){
+    var book = getCurrentBook();
+    if(!book) return;
+    if(!state.currentUnitId || !getUnit(book, state.currentUnitId)){
+      state.currentUnitId = book.units.length ? book.units[0].id : null;
+    }
+  }
+
+  /* ---------- Home ---------- */
+  function renderHome(){
+    var container = document.getElementById("home-list");
+    if(state.books.length===0){
+      container.innerHTML = '<div class="empty-state">まだ輪講がありません。右上の「＋」から追加できます。</div>';
+      return;
+    }
+    container.innerHTML = state.books.map(function(book){
+      var p = bookProgress(book);
+      var statusKey = bookStatusKey(book);
+      var next = bookNextUnit(book);
+      var nextLabel = next && next.status!=="done" ? ("次回: " + (next.plannedDate||"未定") + " 第" + next.order + "回") : "全回完了";
+      var avatars = book.members.slice(0,4).map(function(m){ return '<div class="avatar" title="'+escapeHtml(m.name)+'">'+escapeHtml(initials(m.name))+'</div>'; }).join("");
+      return (
+        '<button class="book-card" data-open-summary="'+book.id+'">' +
+          '<div class="book-card-top">' +
+            '<div><div class="book-card-title">'+escapeHtml(book.name)+'</div>' +
+            '<div class="book-card-meta">'+escapeHtml(book.material)+'</div></div>' +
+            '<span class="pill status-'+statusKey+'">'+escapeHtml(bookStatusLabel(book))+'</span>' +
+          '</div>' +
+          '<div class="progress-track"><div class="progress-fill" style="width:'+p.pct+'%;"></div></div>' +
+          '<div class="book-card-bottom">' +
+            '<span class="book-card-next">'+escapeHtml(nextLabel)+'（'+p.done+'/'+p.total+'回完了）</span>' +
+          '</div>' +
+          '<div class="avatar-row">'+avatars+'</div>' +
+        '</button>'
+      );
+    }).join("");
+    container.querySelectorAll("[data-open-summary]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.summaryBookId = btn.getAttribute("data-open-summary");
+        openModal("bookSummary");
+      });
+    });
+  }
+
+  function renderBookSummary(){
+    var book = getBook(state.summaryBookId) || state.books[0];
+    if(!book) return;
+    state.summaryBookId = book.id;
+    var p = bookProgress(book);
+    document.getElementById("summary-title").textContent = book.name;
+    document.getElementById("summary-body").innerHTML = (
+      '<div class="summary-row"><span class="summary-label">教材</span><span>'+escapeHtml(book.material)+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">目標ペース</span><span>'+escapeHtml(book.pace)+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">進捗</span><span>'+p.done+' / '+p.total+' 回完了（'+p.pct+'%）</span></div>' +
+      '<div class="summary-row"><span class="summary-label">メンバー</span><span>'+book.members.map(function(m){return escapeHtml(m.name);}).join("、")+'</span></div>' +
+      '<div class="summary-row"><span class="summary-label">共有</span><span>共有リンク未発行</span></div>'
+    );
+  }
+
+  /* ---------- Seminar ---------- */
+  function renderSeminar(){
+    selectBookDefault();
+    var book = getCurrentBook();
+    if(!book) return;
+    var p = bookProgress(book);
+    document.getElementById("seminar-info").innerHTML = (
+      '<div class="seminar-info-title">'+escapeHtml(book.name)+'</div>' +
+      '<div class="seminar-info-sub">'+escapeHtml(book.material)+' ・ '+escapeHtml(book.pace)+'</div>' +
+      '<div class="progress-track" style="margin-top:.5rem;"><div class="progress-fill" style="width:'+p.pct+'%;"></div></div>' +
+      '<div class="seminar-info-sub" style="margin-top:.35rem;">'+p.done+' / '+p.total+' 回完了</div>'
+    );
+    var list = document.getElementById("seminar-list");
+    if(book.units.length===0){
+      list.innerHTML = '<div class="empty-state">まだ回がありません。下の「＋回を作成」から追加できます。</div>';
+      return;
+    }
+    list.innerHTML = book.units.slice().sort(function(a,b){return a.order-b.order;}).map(function(u){
+      var presenter = getMember(book, u.presenterId);
+      return (
+        '<button class="unit-row" data-open-unit="'+u.id+'">' +
+          '<span class="unit-order">第'+u.order+'回</span>' +
+          '<span class="unit-main">' +
+            '<span class="unit-title">'+escapeHtml(u.title)+'</span>' +
+            '<span class="unit-meta">' +
+              (presenter ? escapeHtml(presenter.name) : "未割当") + ' ・ ' + escapeHtml(u.plannedDate||"日程未定") +
+              (u.needsReview ? ' ・ <span class="review-flag">⚑要復習</span>' : "") +
+            '</span>' +
+          '</span>' +
+          '<span class="pill status-'+u.status+'">'+STATUS_LABEL[u.status]+'</span>' +
+        '</button>'
+      );
+    }).join("");
+    list.querySelectorAll("[data-open-unit]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.currentUnitId = btn.getAttribute("data-open-unit");
+        showScreen("unit");
+      });
+    });
+  }
+
+  function renderCreateUnitForm(){
+    var book = getCurrentBook();
+    if(!book) return;
+    document.getElementById("input-unit-title").value = "";
+    document.getElementById("input-unit-objective").value = "";
+    document.getElementById("input-unit-date").value = "";
+    state.createUnitPresenterId = book.members[0] ? book.members[0].id : null;
+    var wrap = document.getElementById("unit-presenter-select");
+    wrap.innerHTML = book.members.map(function(m){
+      return '<button type="button" data-presenter="'+m.id+'" class="'+(m.id===state.createUnitPresenterId?"selected":"")+'">'+escapeHtml(m.name)+'</button>';
+    }).join("");
+    wrap.querySelectorAll("[data-presenter]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.createUnitPresenterId = btn.getAttribute("data-presenter");
+        wrap.querySelectorAll("button").forEach(function(b){ b.classList.toggle("selected", b===btn); });
+      });
+    });
+  }
+
+  /* ---------- Unit ---------- */
+  function renderUnit(){
+    selectBookDefault();
+    selectUnitDefault();
+    var book = getCurrentBook();
+    if(!book) return;
+    var unit = getUnit(book, state.currentUnitId);
+    if(!unit){
+      document.getElementById("unit-title").textContent = "回が選択されていません";
+      document.getElementById("unit-objective").innerHTML = "";
+      document.getElementById("unit-meta").innerHTML = "";
+      document.getElementById("unit-log-list").innerHTML = "";
+      return;
+    }
+    document.getElementById("unit-title").textContent = "第" + unit.order + "回　" + unit.title;
+    document.getElementById("unit-objective").innerHTML =
+      '<div class="objective-label">この回で学ぶこと</div>' + escapeHtml(unit.objective || "未設定");
+    var presenter = getMember(book, unit.presenterId);
+    document.getElementById("unit-meta").innerHTML =
+      '<span class="unit-meta-left">担当: '+(presenter?escapeHtml(presenter.name):"未割当")+' ・ '+escapeHtml(unit.plannedDate||"日程未定")+'</span>' +
+      '<span class="unit-status-wrap"><button class="pill pill-btn status-'+unit.status+'" id="unit-status-toggle">'+STATUS_LABEL[unit.status]+'</button>' +
+      '<span class="unit-status-hint">（タップで変更）</span></span>';
+    document.getElementById("unit-status-toggle").addEventListener("click", function(){
+      var idx = STATUS_ORDER.indexOf(unit.status);
+      unit.status = STATUS_ORDER[(idx+1) % STATUS_ORDER.length];
+      renderUnit();
+    });
+
+    var logList = document.getElementById("unit-log-list");
+    if(unit.logs.length===0){
+      logList.innerHTML = '<div class="empty-state">まだ発言がありません。右下の「発言する」から記録できます。</div>';
+    } else {
+      logList.innerHTML = unit.logs.map(function(log){
+        var author = getMember(book, log.authorId);
+        return (
+          '<div class="log-card" id="log-'+log.id+'">' +
+            '<div class="log-head">' +
+              '<span class="log-author">'+(author?escapeHtml(author.name):"不明")+'</span>' +
+              (log.page ? '<span class="log-page">'+escapeHtml(log.page)+'</span>' : "") +
+              '<span class="log-ts">'+escapeHtml(log.ts||"")+'</span>' +
+            '</div>' +
+            '<div class="log-content">'+escapeHtml(log.content)+'</div>' +
+            (log.tags && log.tags.length ? '<div class="tag-row">'+log.tags.map(function(t){return '<span class="tag-chip">#'+escapeHtml(t)+'</span>';}).join("")+'</div>' : "") +
+          '</div>'
+        );
+      }).join("");
+    }
+  }
+
+  function renderAddLogForm(){
+    var book = getCurrentBook();
+    var unit = book ? getUnit(book, state.currentUnitId) : null;
+    document.getElementById("input-log-page").value = "";
+    document.getElementById("input-log-content").value = "";
+    document.getElementById("input-log-tags").value = "";
+    if(!book) return;
+    state.logAuthorId = (unit && unit.presenterId) || (book.members[0] && book.members[0].id);
+    var wrap = document.getElementById("log-author-select");
+    wrap.innerHTML = book.members.map(function(m){
+      return '<button type="button" data-author="'+m.id+'" class="'+(m.id===state.logAuthorId?"selected":"")+'">'+escapeHtml(m.name)+'</button>';
+    }).join("");
+    wrap.querySelectorAll("[data-author]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.logAuthorId = btn.getAttribute("data-author");
+        wrap.querySelectorAll("button").forEach(function(b){ b.classList.toggle("selected", b===btn); });
+      });
+    });
+  }
+
+  function flashLog(logId){
+    requestAnimationFrame(function(){
+      var el = document.getElementById("log-" + logId);
+      if(!el) return;
+      el.scrollIntoView({ block:"center", behavior: reducedMotion() ? "auto" : "smooth" });
+      el.classList.add("flash");
+      setTimeout(function(){ el.classList.remove("flash"); }, reducedMotion() ? 700 : 1500);
+    });
+  }
+
+  /* ---------- Search ---------- */
+  function topTags(book, n){
+    var freq = {};
+    book.units.forEach(function(u){ u.logs.forEach(function(l){ l.tags.forEach(function(t){ freq[t] = (freq[t]||0) + 1; }); }); });
+    return Object.keys(freq).sort(function(a,b){ return freq[b]-freq[a]; }).slice(0, n||10);
+  }
+  function highlightMatch(text, query){
+    var safe = escapeHtml(text);
+    if(!query) return safe;
+    var re = new RegExp("(" + escapeRegExp(escapeHtml(query)) + ")", "ig");
+    return safe.replace(re, "<mark>$1</mark>");
+  }
+  function searchLogs(book, query){
+    var q = query.trim().toLowerCase();
+    if(!q) return [];
+    var results = [];
+    book.units.forEach(function(u){
+      u.logs.forEach(function(l){
+        var hay = (l.content + " " + l.tags.join(" ")).toLowerCase();
+        if(hay.indexOf(q) !== -1) results.push({ unit:u, log:l });
+      });
+    });
+    return results;
+  }
+  function renderSearch(){
+    selectBookDefault();
+    var book = getCurrentBook();
+    if(!book) return;
+    document.getElementById("search-input").value = "";
+    var tags = topTags(book, 10);
+    document.getElementById("search-tags").innerHTML = tags.length
+      ? tags.map(function(t){ return '<button type="button" class="tag-cloud-chip" data-tag="'+escapeHtml(t)+'">#'+escapeHtml(t)+'</button>'; }).join("")
+      : '<span style="font-size:var(--fs-xs);color:var(--ink-muted);">まだハッシュタグがありません</span>';
+    document.querySelectorAll("#search-tags [data-tag]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var t = btn.getAttribute("data-tag");
+        document.getElementById("search-input").value = t;
+        renderSearchResults(t);
+      });
+    });
+    renderSearchResults("");
+  }
+  function renderSearchResults(query){
+    var book = getCurrentBook();
+    var results = document.getElementById("search-results");
+    if(!query){
+      results.innerHTML = '<div class="search-hint">キーワードやハッシュタグを入力するか、上のタグから選んでください</div>';
+      return;
+    }
+    var hits = searchLogs(book, query);
+    if(hits.length===0){
+      results.innerHTML = '<div class="search-hint">「'+escapeHtml(query)+'」に一致する発言が見つかりませんでした</div>';
+      return;
+    }
+    results.innerHTML = hits.map(function(hit){
+      var author = getMember(book, hit.log.authorId);
+      return (
+        '<button type="button" class="result-row" data-jump-unit="'+hit.unit.id+'" data-jump-log="'+hit.log.id+'">' +
+          '<div class="result-top">第'+hit.unit.order+'回 ・ '+(author?escapeHtml(author.name):"不明")+(hit.log.page?(' ・ '+escapeHtml(hit.log.page)):"")+'</div>' +
+          '<div class="result-excerpt">'+highlightMatch(hit.log.content, query)+'</div>' +
+          '<div class="tag-row">'+hit.log.tags.map(function(t){return '<span class="tag-chip">#'+escapeHtml(t)+'</span>';}).join("")+'</div>' +
+        '</button>'
+      );
+    }).join("");
+    results.querySelectorAll("[data-jump-unit]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.currentUnitId = btn.getAttribute("data-jump-unit");
+        var logId = btn.getAttribute("data-jump-log");
+        showScreen("unit");
+        flashLog(logId);
+      });
+    });
+  }
+
+  /* ---------- Wiring ---------- */
+  document.getElementById("start-btn").addEventListener("click", function(){ showScreen("home"); });
+  document.getElementById("home-add-btn").addEventListener("click", function(){ openModal("addBook"); });
+  document.getElementById("seminar-back-btn").addEventListener("click", function(){ showScreen("home"); });
+  document.getElementById("seminar-search-btn").addEventListener("click", function(){ showScreen("search"); });
+  document.getElementById("seminar-create-btn").addEventListener("click", function(){ openModal("createUnit"); });
+  document.getElementById("unit-back-btn").addEventListener("click", function(){ showScreen("seminar"); });
+  document.getElementById("unit-post-btn").addEventListener("click", function(){ openModal("addLog"); });
+  document.getElementById("search-back-btn").addEventListener("click", function(){ showScreen("seminar"); });
+  document.getElementById("search-input").addEventListener("input", function(e){ renderSearchResults(e.target.value); });
+  document.getElementById("summary-start-btn").addEventListener("click", function(){
+    state.currentBookId = state.summaryBookId;
+    state.currentUnitId = null;
+    closeModal();
+    showScreen("seminar");
+  });
+  document.querySelectorAll("[data-close-sheet]").forEach(function(btn){
+    btn.addEventListener("click", closeModal);
+  });
+  document.getElementById("sheet-backdrop").addEventListener("click", function(e){
+    if(e.target.id === "sheet-backdrop") closeModal();
+  });
+
+  document.getElementById("sheet-addBook").addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = document.getElementById("input-book-name").value.trim();
+    if(!name) return;
+    var material = document.getElementById("input-book-material").value.trim();
+    var pace = document.getElementById("input-book-pace").value.trim();
+    var membersRaw = document.getElementById("input-book-members").value.trim();
+    var id = uid("b");
+    var members = membersRaw
+      ? membersRaw.split(/[,、\s]+/).filter(Boolean).map(function(n, i){ return { id:id+"-m"+(i+1), name:n }; })
+      : [];
+    state.books.push({ id:id, name:name, material: material || "教材未設定", pace: pace || "ペース未設定", members:members, units:[] });
+    closeModal();
+    renderHome();
+  });
+
+  document.getElementById("sheet-createUnit").addEventListener("submit", function(e){
+    e.preventDefault();
+    var book = getCurrentBook();
+    if(!book) return;
+    var title = document.getElementById("input-unit-title").value.trim();
+    if(!title) return;
+    var objective = document.getElementById("input-unit-objective").value.trim();
+    var date = document.getElementById("input-unit-date").value;
+    var order = book.units.length ? Math.max.apply(null, book.units.map(function(u){return u.order;})) + 1 : 1;
+    var newUnit = {
+      id: uid(book.id + "-u"), order:order, title:title, objective:objective || "未設定",
+      presenterId: state.createUnitPresenterId, plannedDate: date || "", status:"not_started", needsReview:false, logs:[]
+    };
+    book.units.push(newUnit);
+    state.currentUnitId = newUnit.id;
+    closeModal();
+    showScreen("unit");
+  });
+
+  document.getElementById("sheet-addLog").addEventListener("submit", function(e){
+    e.preventDefault();
+    var book = getCurrentBook();
+    var unit = book ? getUnit(book, state.currentUnitId) : null;
+    if(!unit) return;
+    var content = document.getElementById("input-log-content").value.trim();
+    if(!content) return;
+    var page = document.getElementById("input-log-page").value.trim();
+    var tagsRaw = document.getElementById("input-log-tags").value.trim();
+    var tags = tagsRaw ? tagsRaw.split(/[\s,、#]+/).filter(Boolean) : [];
+    var newLog = { id: uid(unit.id + "-l"), authorId: state.logAuthorId, page:page, content:content, tags:tags, ts:"たった今" };
+    unit.logs.push(newLog);
+    closeModal();
+    renderUnit();
+    flashLog(newLog.id);
+  });
+
+  /* ---------- Quick jump ---------- */
+  var QUICKJUMPS = {
+    start: function(){ closeModal(); showScreen("start"); },
+    home: function(){ closeModal(); showScreen("home"); },
+    addBook: function(){ showScreen("home"); openModal("addBook"); },
+    bookSummary: function(){ selectBookDefault(); state.summaryBookId = state.currentBookId; showScreen("home"); openModal("bookSummary"); },
+    seminar: function(){ closeModal(); selectBookDefault(); showScreen("seminar"); },
+    createUnit: function(){ selectBookDefault(); showScreen("seminar"); openModal("createUnit"); },
+    unit: function(){ closeModal(); selectBookDefault(); selectUnitDefault(); showScreen("unit"); },
+    addLog: function(){ selectBookDefault(); selectUnitDefault(); showScreen("unit"); openModal("addLog"); },
+    search: function(){ closeModal(); selectBookDefault(); showScreen("search"); }
+  };
+  document.querySelectorAll("[data-jump]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var fn = QUICKJUMPS[btn.getAttribute("data-jump")];
+      if(fn) fn();
+    });
+  });
+
+  updateBadge();
+})();
+</script>
+</body>
+</html>
