@@ -72,21 +72,23 @@ User（利用者）
 - created_at
 
 Book（教材）          HomeViewの本棚に並ぶオブジェクト
+                      共有相手にも影響する情報だけを持つ
 - id
 - title               書名
 - cover_image_url     表紙画像
-- shelf_status        planned | reading | finished
-                      本棚の整理用。ユーザーが手動で変更する
-                      （回のステータスからは自動計算しない）
 - goal                全体を通しての目標（自由記述）
-- created_by          -> User
+- created_by          -> User（記録用。作成者に特別な権限はない）
 - created_at
 
 Membership（参加）    誰がどのBookに、どの権限で参加しているか
+                      「その人の本棚がどう見えるか」に属する情報はここに置く
 - id
 - book_id             -> Book
 - user_id             -> User
 - role                editor | viewer
+- shelf_status        planned | reading | finished
+                      本棚の整理用。ユーザーが手動で変更する
+                      （回のステータスからは自動計算しない）
 - display_order       HomeViewでの並び順（手動並べ替え用）
 - deleted_at          ゴミ箱に入れた日時。null なら通常表示
 - joined_at
@@ -197,7 +199,7 @@ Attachment（添付ファイル）
 ## 並び順
 
 **HomeView（本棚）**
-- 学習中（`reading`）の教材のみを表示する
+- 学習中（`Membership.shelf_status = reading`）の教材のみを表示する
 - 学習予定・学習済みはフィルタを切り替えて表示する
 - 並び順は手動（`Membership.display_order`）
 - 共有されている教材には複数人アイコンを表示する

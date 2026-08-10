@@ -39,9 +39,9 @@
 ## データモデル
 ```
 User:       id, email, display_name
-Book:       id, title, cover_image_url, shelf_status(planned|reading|finished),
-            goal, created_by
-Membership: id, book_id, user_id, role(editor|viewer), display_order, deleted_at
+Book:       id, title, cover_image_url, goal, created_by
+Membership: id, book_id, user_id, role(editor|viewer),
+            shelf_status(planned|reading|finished), display_order, deleted_at
 InviteLink: id, book_id, token, role, created_by
 Unit:       id, book_id, order, title, objective, presenter_id,
             scheduled_date, status(not_started|in_progress|done), deleted_at
@@ -52,7 +52,9 @@ LogTag:     log_id, tag_id
 Attachment: id, log_id, file_url, file_name, mime_type
 ```
 
-`Book.shelf_status` は本棚の整理用でユーザーが手動変更する。`Unit.status` は進捗計算用。目的が違うので名前を分けている。
+`Membership.shelf_status` は本棚の整理用でユーザーが手動変更する。`Unit.status` は進捗計算用。目的が違うので名前を分けている。
+
+**個人の状態と共有の状態を必ず区別する。** 「その人の画面がどう見えるか」に属する情報を `Book` や `Unit` に置くと、誰かの操作が共有相手全員に波及する。本棚のステータス・並び順・削除はすべて `Membership` 側にある。
 
 ## 画面（10枚）
 LoginView / HomeView / AddBookView / BookSummaryView / SeminarView /

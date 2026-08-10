@@ -18,25 +18,29 @@ create table public.profiles (
 );
 
 -- 教材。ホーム画面の本棚に並ぶオブジェクト
+-- 共有相手にも影響する情報だけを持たせる
 create table public.books (
   id              uuid primary key default gen_random_uuid(),
   title           text        not null,
   cover_image_url text,
-  shelf_status    text        not null default 'reading'
-                    check (shelf_status in ('planned', 'reading', 'finished')),
   goal            text,
   created_by      uuid        not null references public.profiles (id),
   created_at      timestamptz not null default now()
 );
 
 -- 参加。誰がどの教材に、どの権限で参加しているか
--- 教材の削除は「自分の本棚から消す」操作なので、削除フラグはここに持つ
+--
+-- 本棚まわりの状態は「その人の本棚がどう見えるか」の話なので、教材ではなくここに持つ。
+-- 教材側に置くと、誰かが「学習済み」にした瞬間に共有相手全員のホームから消えてしまう。
+-- 削除フラグと並び順も同じ理由でここにある。
 create table public.memberships (
   id            uuid primary key default gen_random_uuid(),
   book_id       uuid        not null references public.books (id) on delete cascade,
   user_id       uuid        not null references public.profiles (id) on delete cascade,
   role          text        not null default 'editor'
                   check (role in ('editor', 'viewer')),
+  shelf_status  text        not null default 'reading'
+                  check (shelf_status in ('planned', 'reading', 'finished')),
   display_order integer     not null default 0,
   deleted_at    timestamptz,
   joined_at     timestamptz not null default now(),
