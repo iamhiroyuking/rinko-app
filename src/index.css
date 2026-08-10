@@ -1,0 +1,95 @@
+/*
+ * 全画面に効く最低限のスタイル。
+ * 色・余白の本格的なルールは Issue #26 で決めるので、今は読めれば十分な状態にしてある。
+ */
+
+:root {
+  --bg: #ffffff;
+  --fg: #1b231e;
+  --muted: #5c6961;
+  --line: #d8dfd7;
+  --accent: #2e6355;
+
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Hiragino Sans',
+    'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111611;
+    --fg: #e7ece6;
+    --muted: #93a099;
+    --line: #2a342c;
+    --accent: #6fae93;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.screen {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.screen-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1rem;
+}
+
+.screen-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  text-wrap: balance;
+}
+
+.screen-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.screen-param {
+  margin: 0;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.screen-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.screen-footer {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  font-size: 0.875rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
