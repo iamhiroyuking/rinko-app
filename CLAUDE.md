@@ -62,17 +62,28 @@ CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 
 `docs/prototype/screen-flow-demo.html` はv1時点の9画面で作ったクリッカブルデモ。ログイン・ゴミ箱・返信などv2の変更は未反映。
 
+## ドキュメントの役割分担
+| ファイル | 内容 |
+|---|---|
+| `docs/requirements.md` | なぜ作るか、課題、MVP範囲、データモデル、各種ポリシー |
+| `docs/features.md` | **画面ごとの機能一覧。** 個人の状態(👤)と共有の状態(👥)を明示している |
+| `docs/screen-flow.md` | 10画面と遷移、画面ごとの仕様 |
+| `docs/issues.md` | 実装計画（29件のIssueと依存関係） |
+| `docs/open-questions.md` | 未決事項と、決着した論点の記録 |
+
 ## 進行状況・次のステップ
 - [x] アイデア確定（案A: 輪講アプリ）
-- [x] 要件定義 v1
-- [x] 画面遷移図 v1（9画面）とクリッカブルデモ
-- [x] 全設問への回答を踏まえた要件定義 v2・画面遷移図 v2・データモデル再定義
-- [x] 設計上の未決事項をすべて解消（`docs/open-questions.md`）
-- [x] 実装計画を29件のIssueに分割（`docs/issues.md`）
-- [ ] データの保存先の決定 ← Supabase（BaaS）に傾いているが未確定
-- [ ] 技術スタック選定
-- [ ] 開発環境の構築（Issue #1）
+- [x] 要件定義 v2・画面遷移図 v2・データモデル・機能一覧
+- [x] 技術スタック確定（Vite + React + TS / Supabase / Vercel）
+- [x] 開発環境の構築（Issue #1、10画面のルーティング済み）
+- [x] DBスキーマのマイグレーションを記述（`supabase/migrations/`、**未適用**）
+- [ ] Supabaseプロジェクトの作成 ← **本人しかできない**（アカウント登録が必要）
+- [ ] スキーマの適用と接続確認（Issue #2）
 - [ ] M1「輪講で実際に使える」まで到達（8/20期限、Issue #5〜#10）
+
+### 未決の設計論点（`docs/open-questions.md`）
+Q1 ログのマークは個人の栞か共有の印か / Q2 回を削除したとき誰のゴミ箱に入るか。
+**この2つはデータの持ち方が変わるので、スキーマを適用する前に決める。**
 
 ### 実装計画の要点（詳細は docs/issues.md）
 Issueは縦切り（1つが「画面→データ取得→保存」まで通る単位）で分割してある。

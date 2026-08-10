@@ -42,6 +42,7 @@ create table public.memberships (
   shelf_status  text        not null default 'reading'
                   check (shelf_status in ('planned', 'reading', 'finished')),
   display_order integer     not null default 0,
+  last_seen_at  timestamptz not null default now(),
   deleted_at    timestamptz,
   joined_at     timestamptz not null default now(),
   unique (book_id, user_id)
@@ -402,3 +403,130 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row
   execute function public.handle_new_user ();
+
+-- ---------------------------------------------------------------------------
+-- 教材を作った人を自動で参加者にする
+--
+-- 教材の閲覧は参加していることが条件なので、これが無いと
+-- 作った本人が自分の教材を見られない。
+-- 本棚での並び順は、既にある教材の後ろに来るようにする。
+-- ---------------------------------------------------------------------------
+
+create or replace function public.handle_new_book ()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.memberships (book_id, user_id, role, display_order)
+  values (
+    new.id,
+    new.created_by,
+    'editor',
+    coalesce(
+      (select max(display_order) + 1
+         from public.memberships
+        where user_id = new.created_by),
+      0
+    )
+  );
+  return new;
+end;
+$$;
+
+create trigger on_book_created
+  after insert on public.books
+  for each row
+  execute function public.handle_new_book ();
+
+-- ---------------------------------------------------------------------------
+-- 招待リンクで教材に参加する
+--
+-- リンクを受け取った人はまだ参加者ではないため、通常のポリシーでは
+-- invite_links を読めず token を照合できない。
+-- security definer 関数として用意し、token が正しいときだけ参加させる。
+--
+-- 過去にゴミ箱へ入れただけの場合は、参加情報を作り直さず復帰させる。
+-- 完全削除した後にもう一度参加した場合は新しい参加情報になるが、
+-- ログは author_id で利用者に紐づいているため過去の発言と繋がったままになる。
+-- ---------------------------------------------------------------------------
+
+create or replace function public.join_book_with_token (invite_token text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  link     public.invite_links;
+  existing public.memberships;
+begin
+  if auth.uid() is null then
+    raise exception 'ログインが必要です';
+  end if;
+
+  select * into link
+    from public.invite_links
+   where token = invite_token;
+
+  if not found then
+    raise exception '招待リンクが見つかりません';
+  end if;
+
+  select * into existing
+    from public.memberships
+   where book_id = link.book_id
+     and user_id = auth.uid();
+
+  if found then
+    update public.memberships
+       set deleted_at = null
+     where id = existing.id;
+    return link.book_id;
+  end if;
+
+  insert into public.memberships (book_id, user_id, role, display_order)
+  values (
+    link.book_id,
+    auth.uid(),
+    link.role,
+    coalesce(
+      (select max(display_order) + 1
+         from public.memberships
+        where user_id = auth.uid()),
+      0
+    )
+  );
+
+  return link.book_id;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 参加者が誰もいなくなった教材を削除する
+--
+-- 「参加者が全員完全削除した時点でデータベースから削除する」方針の実装。
+-- 配下の回・ログ・タグ・添付は外部キーの on delete cascade で連鎖して消える。
+-- ---------------------------------------------------------------------------
+
+create or replace function public.delete_orphan_book ()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public.memberships where book_id = old.book_id
+  ) then
+    delete from public.books where id = old.book_id;
+  end if;
+  return old;
+end;
+$$;
+
+create trigger on_membership_deleted
+  after delete on public.memberships
+  for each row
+  execute function public.delete_orphan_book ();
