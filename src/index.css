@@ -9,6 +9,7 @@
   --muted: #5c6961;
   --line: #d8dfd7;
   --accent: #2e6355;
+  --surface-2: #f2f5f1;
   --danger: #a6543d;
   --danger-bg: #f3e1da;
   --warn: #7a4e14;
@@ -29,6 +30,7 @@
     --muted: #93a099;
     --line: #2a342c;
     --accent: #6fae93;
+    --surface-2: #1d2620;
     --danger: #d98266;
     --danger-bg: #3a241c;
     --warn: #e3a857;
@@ -48,24 +50,85 @@ body {
   color: var(--fg);
 }
 
+/* ---------------------------------------------------------------------------
+ * 画面の骨格
+ *
+ * ヘッダーは画面上部に固定し、どの画面でも同じ位置に「戻る」がある状態にする。
+ * 見た目の体系づくりは Issue #26 で行うので、ここでは導線が成り立つことを優先。
+ * ------------------------------------------------------------------------- */
+
 .screen {
+  min-height: 100vh;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.app-header-inner {
   max-width: 40rem;
   margin: 0 auto;
-  padding: 2rem 1rem 3rem;
+  padding: 0 0.5rem;
+  min-height: 3rem;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.screen-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 1rem;
+.app-name {
+  padding: 0 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
-.screen-header h1 {
+/* 戻る。指で押せる大きさを確保する */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 2.75rem;
+  padding: 0 0.75rem 0 0.5rem;
+  border-radius: 0.5rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9375rem;
+}
+
+.back-link span[aria-hidden] {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.back-link:hover {
+  background: var(--surface-2);
+}
+
+.app-header-action {
+  display: flex;
+  align-items: center;
+}
+
+.screen-body {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.screen-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.screen-heading h1 {
   margin: 0;
   font-size: 1.5rem;
   text-wrap: balance;
@@ -84,17 +147,74 @@ body {
   color: var(--muted);
 }
 
-.screen-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-start;
+/* その画面でいちばんやりたいこと。リンクだが見た目はボタンにする */
+.primary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.screen-footer {
+.primary-link:hover {
+  filter: brightness(1.08);
+}
+
+/* 主要でない移動先。控えめに並べる */
+.link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   border-top: 1px solid var(--line);
-  padding-top: 1rem;
-  font-size: 0.875rem;
+}
+
+.link-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.link-list a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.link-list a::after {
+  content: '›';
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+/* ヘッダーに置く、目立たせたくない操作 */
+.quiet-button {
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.quiet-button:hover {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.foot-note {
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .field-row {

@@ -34,9 +34,8 @@ export default function HomeView() {
         if (!cancelled) setState({ status: 'ok', books, profile })
       })
       .catch((caught: unknown) => {
-        if (cancelled) return
-        const message = errorMessage(caught)
-        setState({ status: 'error', message })
+        if (!cancelled)
+          setState({ status: 'error', message: errorMessage(caught) })
       })
 
     return () => {
@@ -49,8 +48,23 @@ export default function HomeView() {
     navigate('/login')
   }
 
+  const profile = state.status === 'ok' ? state.profile : null
+
   return (
-    <ScreenFrame title="本棚" description="学習中の教材が並びます。">
+    <ScreenFrame
+      title="本棚"
+      description="学習中の教材が並びます。"
+      headerAction={
+        <button type="button" className="quiet-button" onClick={handleSignOut}>
+          ログアウト
+        </button>
+      }
+      primaryAction={{ label: '＋ 教材を追加', to: '/books/new' }}
+      secondaryLinks={[{ label: 'ゴミ箱', to: '/trash' }]}
+      footNote={
+        profile ? `${profile.display_name} としてログイン中` : undefined
+      }
+    >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
       )}
@@ -61,15 +75,15 @@ export default function HomeView() {
 
       {state.status === 'ok' && (
         <>
-          <p className="screen-param">
-            {state.profile
-              ? `${state.profile.display_name} としてログイン中`
-              : '⚠️ プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）'}
-          </p>
+          {!profile && (
+            <p className="screen-error">
+              プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）
+            </p>
+          )}
 
           {state.books.length === 0 ? (
             <p className="empty-state">
-              まだ教材がありません。「教材を追加」から始めてください。
+              まだ教材がありません。下の「教材を追加」から始めてください。
             </p>
           ) : (
             <ul className="shelf">
@@ -95,14 +109,6 @@ export default function HomeView() {
           )}
         </>
       )}
-
-      <nav className="screen-nav">
-        <Link to="/books/new">教材を追加</Link>
-        <Link to="/trash">ゴミ箱</Link>
-        <button type="button" className="link-button" onClick={handleSignOut}>
-          ログアウト
-        </button>
-      </nav>
     </ScreenFrame>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { getBook, type Book } from '../repository/books'
 import { errorMessage } from '../lib/errorMessage'
@@ -38,6 +38,12 @@ export default function BookSummaryView() {
     <ScreenFrame
       title={book?.title ?? '教材の概要'}
       description="参加者・次回の担当者・全体の進捗・共有リンクは今後ここに表示します。"
+      backTo="/"
+      primaryAction={
+        book
+          ? { label: '学習を開始する', to: `/books/${bookId}/units` }
+          : undefined
+      }
     >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
@@ -57,12 +63,6 @@ export default function BookSummaryView() {
           {book.goal}
         </div>
       )}
-
-      <nav className="screen-nav">
-        <Link to={`/books/${bookId}/units`}>
-          学習を開始する（回のリストへ）
-        </Link>
-      </nav>
     </ScreenFrame>
   )
 }

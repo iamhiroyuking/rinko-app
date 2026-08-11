@@ -56,6 +56,12 @@ export default function SeminarView() {
           : '回のリスト'
       }
       description="輪講の回が第N回の順に並びます。"
+      backTo={`/books/${bookId}`}
+      primaryAction={{
+        label: '＋ 回を作成',
+        to: `/books/${bookId}/units/new`,
+      }}
+      secondaryLinks={[{ label: '記録を検索', to: `/books/${bookId}/search` }]}
     >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
@@ -97,12 +103,6 @@ export default function SeminarView() {
           )}
         </>
       )}
-
-      <nav className="screen-nav">
-        <Link to={`/books/${bookId}/units/new`}>回を作成</Link>
-        <Link to={`/books/${bookId}/search`}>検索</Link>
-        <Link to={`/books/${bookId}`}>教材の概要へ</Link>
-      </nav>
     </ScreenFrame>
   )
 }

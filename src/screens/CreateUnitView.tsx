@@ -59,6 +59,7 @@ export default function CreateUnitView() {
     <ScreenFrame
       title="回を作成"
       description="第N回の番号は自動で振られます。後から編集できます。"
+      backTo={`/books/${bookId}/units`}
     >
       <form className="form" onSubmit={handleSubmit}>
         <div className="field">

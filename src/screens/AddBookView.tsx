@@ -34,6 +34,7 @@ export default function AddBookView() {
     <ScreenFrame
       title="教材を追加"
       description="輪講で使う教材を本棚に並べます。"
+      backTo="/"
     >
       <form className="form" onSubmit={handleSubmit}>
         <div className="field">

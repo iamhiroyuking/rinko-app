@@ -8,6 +8,7 @@ export default function SearchView() {
     <ScreenFrame
       title="検索"
       description="頻出ハッシュタグ上位10件のチップと検索バー。結果から該当ログへジャンプする。"
+      backTo={`/books/${bookId}/units`}
     >
       <p className="screen-param">bookId: {bookId}</p>
     </ScreenFrame>

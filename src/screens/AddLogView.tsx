@@ -60,6 +60,7 @@ export default function AddLogView() {
     <ScreenFrame
       title="発言を追加"
       description="輪講中に気づいたこと、予習で理解したこと、疑問などを残します。"
+      backTo={`/books/${bookId}/units/${unitId}`}
     >
       <form className="form" onSubmit={handleSubmit}>
         <div className="field">

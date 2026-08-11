@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { listBookMembers, type BookMember } from '../repository/members'
 import { getUnit, UNIT_STATUS_LABEL, type Unit } from '../repository/units'
@@ -76,6 +76,15 @@ export default function UnitView() {
     <ScreenFrame
       title={unit ? `第${unit.order}回　${unit.title}` : '回ごとの記録'}
       description="新しい記録が上に並びます。"
+      backTo={`/books/${bookId}/units`}
+      primaryAction={
+        unit
+          ? {
+              label: '🗨 発言する',
+              to: `/books/${bookId}/units/${unitId}/logs/new`,
+            }
+          : undefined
+      }
     >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
@@ -144,13 +153,6 @@ export default function UnitView() {
           )}
         </>
       )}
-
-      <nav className="screen-nav">
-        {unit && (
-          <Link to={`/books/${bookId}/units/${unitId}/logs/new`}>発言する</Link>
-        )}
-        <Link to={`/books/${bookId}/units`}>回のリストへ戻る</Link>
-      </nav>
     </ScreenFrame>
   )
 }
