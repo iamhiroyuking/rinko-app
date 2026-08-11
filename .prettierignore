@@ -2,6 +2,11 @@
 # 自動整形すると差分がノイズになり、ドキュメントのレビューがしづらくなる。
 *.md
 
+# 手で書いた成果物。整形すると差分がノイズになる
+docs/prototype/
+
 # 自動生成されるもの
 dist/
 package-lock.json
+src/repository/database.types.ts
+supabase/.temp/

@@ -39,20 +39,23 @@
 ## データモデル
 ```
 User:       id, email, display_name
-Book:       id, title, cover_image_url, shelf_status(planned|reading|finished),
-            goal, created_by
-Membership: id, book_id, user_id, role(editor|viewer), display_order, deleted_at
+Book:       id, title, cover_image_url, goal, created_by
+Membership: id, book_id, user_id, role(editor|viewer),
+            shelf_status(planned|reading|finished), display_order, deleted_at
 InviteLink: id, book_id, token, role, created_by
-Unit:       id, book_id, order, title, objective, presenter_id,
-            scheduled_date, status(not_started|in_progress|done), deleted_at
+Unit:       id, book_id, order, title, objective, presenter_id, scheduled_date,
+            status(not_started|in_progress|done), created_by, deleted_at
 Log:        id, unit_id, author_id, parent_log_id, type(none|preview|question|review),
-            title, body, page_start, page_end, is_marked
+            title, body, page_start, page_end
+LogMark:    log_id, user_id   ← 個人のしおり
 Tag:        id, book_id, name
 LogTag:     log_id, tag_id
 Attachment: id, log_id, file_url, file_name, mime_type
 ```
 
-`Book.shelf_status` は本棚の整理用でユーザーが手動変更する。`Unit.status` は進捗計算用。目的が違うので名前を分けている。
+`Membership.shelf_status` は本棚の整理用でユーザーが手動変更する。`Unit.status` は進捗計算用。目的が違うので名前を分けている。
+
+**個人の状態と共有の状態を必ず区別する。** 「その人の画面がどう見えるか」に属する情報を `Book` や `Unit` に置くと、誰かの操作が共有相手全員に波及する。本棚のステータス・並び順・削除はすべて `Membership` 側にある。
 
 ## 画面（10枚）
 LoginView / HomeView / AddBookView / BookSummaryView / SeminarView /
@@ -60,17 +63,32 @@ CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 
 `docs/prototype/screen-flow-demo.html` はv1時点の9画面で作ったクリッカブルデモ。ログイン・ゴミ箱・返信などv2の変更は未反映。
 
+## ドキュメントの役割分担
+| ファイル | 内容 |
+|---|---|
+| `docs/requirements.md` | なぜ作るか、課題、MVP範囲、データモデル、各種ポリシー |
+| `docs/features.md` | **画面ごとの機能一覧。** 個人の状態(👤)と共有の状態(👥)を明示している |
+| `docs/screen-flow.md` | 10画面と遷移、画面ごとの仕様 |
+| `docs/issues.md` | 実装計画（29件のIssueと依存関係） |
+| `docs/open-questions.md` | 未決事項と、決着した論点の記録 |
+
 ## 進行状況・次のステップ
 - [x] アイデア確定（案A: 輪講アプリ）
-- [x] 要件定義 v1
-- [x] 画面遷移図 v1（9画面）とクリッカブルデモ
-- [x] 全設問への回答を踏まえた要件定義 v2・画面遷移図 v2・データモデル再定義
-- [x] 設計上の未決事項をすべて解消（`docs/open-questions.md`）
-- [x] 実装計画を29件のIssueに分割（`docs/issues.md`）
-- [ ] データの保存先の決定 ← Supabase（BaaS）に傾いているが未確定
-- [ ] 技術スタック選定
-- [ ] 開発環境の構築（Issue #1）
+- [x] 要件定義 v2・画面遷移図 v2・データモデル・機能一覧
+- [x] 技術スタック確定（Vite + React + TS / Supabase / Vercel）
+- [x] 開発環境の構築（Issue #1、10画面のルーティング済み）
+- [x] DBスキーマのマイグレーションを記述（`supabase/migrations/`、**未適用**）
+- [ ] Supabaseプロジェクトの作成 ← **本人しかできない**（アカウント登録が必要）
+- [ ] スキーマの適用と接続確認（Issue #2）
 - [ ] M1「輪講で実際に使える」まで到達（8/20期限、Issue #5〜#10）
+
+### 共有されているものの扱い（原則）
+**追加と編集は参加者全員に同期し、削除だけは作った本人しかできない。**
+回を削除すると全員の画面から消えるが、ゴミ箱に出て復元できるのは作成者だけ（`Unit.created_by`）。
+ログのしおりは個人のもので他人には見えない（`log_marks` テーブル）。
+
+データの持ち方に影響する論点はすべて決着済み。残るQ3（添付ファイルの保護方針）と
+Q4（第N回の番号が重複したときの並び順）は実装時の判断で足りる。
 
 ### 実装計画の要点（詳細は docs/issues.md）
 Issueは縦切り（1つが「画面→データ取得→保存」まで通る単位）で分割してある。

@@ -72,21 +72,23 @@ User（利用者）
 - created_at
 
 Book（教材）          HomeViewの本棚に並ぶオブジェクト
+                      共有相手にも影響する情報だけを持つ
 - id
 - title               書名
 - cover_image_url     表紙画像
-- shelf_status        planned | reading | finished
-                      本棚の整理用。ユーザーが手動で変更する
-                      （回のステータスからは自動計算しない）
 - goal                全体を通しての目標（自由記述）
-- created_by          -> User
+- created_by          -> User（記録用。作成者に特別な権限はない）
 - created_at
 
 Membership（参加）    誰がどのBookに、どの権限で参加しているか
+                      「その人の本棚がどう見えるか」に属する情報はここに置く
 - id
 - book_id             -> Book
 - user_id             -> User
 - role                editor | viewer
+- shelf_status        planned | reading | finished
+                      本棚の整理用。ユーザーが手動で変更する
+                      （回のステータスからは自動計算しない）
 - display_order       HomeViewでの並び順（手動並べ替え用）
 - deleted_at          ゴミ箱に入れた日時。null なら通常表示
 - joined_at
@@ -109,6 +111,7 @@ Unit（回）
 - scheduled_date      輪講の日
 - status              not_started | in_progress | done
                       参加者なら誰でも変更できる
+- created_by          -> User   削除・復元できるのはこの人だけ
 - deleted_at          ゴミ箱に入れた日時
 - created_at
 
@@ -123,9 +126,15 @@ Log（発言・記録）     v1で見送った Exercise を独立オブジェク
 - body
 - page_start          数値
 - page_end            数値
-- is_marked           重要マーク。後から見返すためのフラグ
 - created_at
 - updated_at
+
+LogMark（しおり）     後から見返したいログの個人の目印
+- log_id              -> Log
+- user_id             -> User
+- created_at
+                      他人のマークは見えない。ログ本体に持たせると
+                      他人の復習ポイントが自分の画面に出てしまう
 
 Tag（ハッシュタグ）
 - id
@@ -156,10 +165,19 @@ Attachment（添付ファイル）
 
 | 対象 | 挙動 |
 |---|---|
-| ログ・返信 | 確認ダイアログ → **完全削除**。返信も連鎖して消える |
+| ログ・返信 | 確認ダイアログ → **完全削除**。返信も連鎖して消える。自分の投稿のみ |
 | Book | 確認ダイアログ → **ゴミ箱**（`Membership.deleted_at` を設定）|
-| Unit | 確認ダイアログ → **ゴミ箱**（`Unit.deleted_at` を設定）|
+| Unit | 確認ダイアログ → **ゴミ箱**（`Unit.deleted_at` を設定）。**作成者のみ** |
 | ゴミ箱の中身 | もう一度削除すると完全削除。復元も可能 |
+
+### 回の削除と共有の関係
+回の追加と編集は**参加者全員で同期する**が、削除だけは**作った本人しかできない**。
+
+- 削除すると回そのものが無くなるので、**全員の画面から消える**
+- ただしゴミ箱に出て復元できるのは**作った人だけ**
+- 作成者がその教材から抜けている場合は、誰も片付けられなくなるため編集者なら削除できる
+
+ログの「自分の投稿のみ編集・削除できる」と同じ考え方に揃えている。
 
 ### Bookの削除と共有の関係
 - 削除は**自分の本棚から消す操作**であり、作成者かどうかによる区別はない
@@ -197,7 +215,7 @@ Attachment（添付ファイル）
 ## 並び順
 
 **HomeView（本棚）**
-- 学習中（`reading`）の教材のみを表示する
+- 学習中（`Membership.shelf_status = reading`）の教材のみを表示する
 - 学習予定・学習済みはフィルタを切り替えて表示する
 - 並び順は手動（`Membership.display_order`）
 - 共有されている教材には複数人アイコンを表示する
