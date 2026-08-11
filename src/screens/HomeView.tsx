@@ -64,15 +64,11 @@ export default function HomeView() {
 
       {state.status === 'ok' && (
         <div className="stack">
-          {session ? (
-            <p className="screen-param">
-              {state.profile
-                ? `${state.profile.display_name} としてログイン中`
-                : '⚠️ プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）'}
-            </p>
-          ) : (
-            <p className="screen-param">ログインしていません</p>
-          )}
+          <p className="screen-param">
+            {state.profile
+              ? `${state.profile.display_name} としてログイン中`
+              : '⚠️ プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）'}
+          </p>
 
           <p className="screen-param">本棚の教材: {state.books.length}件</p>
 
@@ -88,13 +84,9 @@ export default function HomeView() {
         <Link to="/books/new">教材を追加</Link>
         <Link to="/books/demo">教材を開く（概要へ）</Link>
         <Link to="/trash">ゴミ箱</Link>
-        {session ? (
-          <button type="button" className="link-button" onClick={handleSignOut}>
-            ログアウト
-          </button>
-        ) : (
-          <Link to="/login">ログイン画面</Link>
-        )}
+        <button type="button" className="link-button" onClick={handleSignOut}>
+          ログアウト
+        </button>
       </nav>
     </ScreenFrame>
   )

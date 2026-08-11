@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import SessionProvider from './auth/SessionProvider'
+import RequireLogin from './auth/RequireLogin'
 import LoginView from './screens/LoginView'
 import HomeView from './screens/HomeView'
 import AddBookView from './screens/AddBookView'
@@ -13,7 +14,10 @@ import TrashView from './screens/TrashView'
 
 /**
  * URLと画面の対応表。
+ *
  * `:bookId` のようにコロンが付いた部分は可変で、画面側から値を取り出せる。
+ * ログイン画面以外はすべて RequireLogin の内側に置く。こうしておくと
+ * 画面を足すときに保護を書き忘れても、外側に出さない限り守られる。
  */
 export default function App() {
   return (
@@ -21,18 +25,24 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginView />} />
-          <Route path="/" element={<HomeView />} />
-          <Route path="/books/new" element={<AddBookView />} />
-          <Route path="/books/:bookId" element={<BookSummaryView />} />
-          <Route path="/books/:bookId/units" element={<SeminarView />} />
-          <Route path="/books/:bookId/units/new" element={<CreateUnitView />} />
-          <Route path="/books/:bookId/units/:unitId" element={<UnitView />} />
-          <Route
-            path="/books/:bookId/units/:unitId/logs/new"
-            element={<AddLogView />}
-          />
-          <Route path="/books/:bookId/search" element={<SearchView />} />
-          <Route path="/trash" element={<TrashView />} />
+
+          <Route element={<RequireLogin />}>
+            <Route path="/" element={<HomeView />} />
+            <Route path="/books/new" element={<AddBookView />} />
+            <Route path="/books/:bookId" element={<BookSummaryView />} />
+            <Route path="/books/:bookId/units" element={<SeminarView />} />
+            <Route
+              path="/books/:bookId/units/new"
+              element={<CreateUnitView />}
+            />
+            <Route path="/books/:bookId/units/:unitId" element={<UnitView />} />
+            <Route
+              path="/books/:bookId/units/:unitId/logs/new"
+              element={<AddLogView />}
+            />
+            <Route path="/books/:bookId/search" element={<SearchView />} />
+            <Route path="/trash" element={<TrashView />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </SessionProvider>
