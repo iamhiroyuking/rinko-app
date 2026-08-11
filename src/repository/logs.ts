@@ -87,8 +87,6 @@ export async function listLogs(unitId: string): Promise<LogEntry[]> {
 
 export type NewLog = {
   unitId: string
-  /** タグは教材ごとに管理しているので、どの教材かが必要になる */
-  bookId: string
   type: LogType
   title?: string | null
   body: string
@@ -99,6 +97,11 @@ export type NewLog = {
 
 /**
  * ログを投稿し、そのidを返す。
+ *
+ * タグは教材ごとに管理しているので教材のidが必要になるが、呼び出し側から
+ * 受け取らず、回のidから引いている。別々に受け取ると「教材Aの回」と
+ * 「教材B」という噛み合わない組み合わせを渡せてしまい、ログは教材Aに付くのに
+ * タグだけ教材Bに作られる、という壊れ方をするため。
  *
  * タグの登録と結びつけはログの作成後に行うため、厳密にはひとつの操作にまとまって
  * いない。途中で失敗するとタグの付いていないログが残る。今の規模では実害が小さいので
@@ -129,7 +132,15 @@ export async function createLog(input: NewLog): Promise<string> {
 
   const names = input.tagNames ?? []
   if (names.length > 0) {
-    const tagIds = await ensureTags(input.bookId, names)
+    const { data: unit, error: unitError } = await supabase
+      .from('units')
+      .select('book_id')
+      .eq('id', input.unitId)
+      .single()
+
+    if (unitError) throw unitError
+
+    const tagIds = await ensureTags(unit.book_id, names)
     await attachTagsToLog(data.id, tagIds)
   }
 

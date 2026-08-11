@@ -40,7 +40,6 @@ export default function AddLogView() {
     try {
       await createLog({
         unitId,
-        bookId,
         type,
         title: title.trim() || null,
         body: body.trim(),

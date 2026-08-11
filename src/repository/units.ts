@@ -88,6 +88,12 @@ export async function createUnit(input: NewUnit): Promise<string> {
   const userId = userData.user?.id
   if (!userId) throw new Error('ログインが必要です')
 
+  // ゴミ箱に入れた回も数に含めている（deleted_at で絞っていない）。
+  //
+  // 除くと、捨てた第3回がある状態で新しく作ったとき番号が3で重複し、
+  // その回を復元した瞬間に同じ番号が2つ並ぶ。
+  // 含めると一覧が「第1回・第2回・第4回」と飛ぶが、番号は後から手で
+  // 直せる仕様なので、重複を作るより飛ばす方を選んでいる。
   const { data: last, error: lastError } = await supabase
     .from('units')
     .select('order')

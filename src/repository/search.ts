@@ -44,6 +44,11 @@ export async function listSearchableLogs(
       '*, units!inner (id, order, title, book_id), log_tags ( tags ( name ) )',
     )
     .eq('units.book_id', bookId)
+    // ゴミ箱に入れた回のログを除く。行レベルセキュリティは削除済みの回も
+    // 読めるようにしてある（ゴミ箱画面で復元するために必要）ので、
+    // ここで絞らないと捨てた回の記録まで検索に出てしまう。
+    // しかもその結果を押しても getUnit が弾くので「見つかりません」になる。
+    .is('units.deleted_at', null)
 
   if (error) throw error
 
