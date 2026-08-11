@@ -9,6 +9,8 @@
   --muted: #5c6961;
   --line: #d8dfd7;
   --accent: #2e6355;
+  --danger: #a6543d;
+  --danger-bg: #f3e1da;
 
   font-family:
     -apple-system, BlinkMacSystemFont, 'Hiragino Sans',
@@ -23,6 +25,8 @@
     --muted: #93a099;
     --line: #2a342c;
     --accent: #6fae93;
+    --danger: #d98266;
+    --danger-bg: #3a241c;
   }
 }
 
@@ -83,6 +87,16 @@ body {
   border-top: 1px solid var(--line);
   padding-top: 1rem;
   font-size: 0.875rem;
+}
+
+.screen-error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.5rem;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.875rem;
+  overflow-wrap: break-word;
 }
 
 a {
