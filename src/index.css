@@ -345,6 +345,60 @@ body {
   border-radius: 0.6rem;
 }
 
+/* 検索結果から飛んできたログ。どれを見に来たのか分かるようにする */
+.log-card.focused {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--done-bg);
+}
+
+.result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.result-row:hover {
+  border-color: var(--accent);
+}
+
+.result-context {
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+mark {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: 0.2rem;
+  padding: 0 0.1rem;
+}
+
+.tag-row-flush {
+  margin-top: 0;
+}
+
+.tag-button {
+  min-height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.tag-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .log-head {
   display: flex;
   align-items: baseline;

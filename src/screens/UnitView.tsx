@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { listBookMembers, type BookMember } from '../repository/members'
 import { getUnit, UNIT_STATUS_LABEL, type Unit } from '../repository/units'
@@ -34,7 +34,11 @@ function formatTimestamp(iso: string): string {
 
 export default function UnitView() {
   const { bookId, unitId } = useParams()
+  const [searchParams] = useSearchParams()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+
+  /** 検索結果から飛んできたときに指定される、目当てのログ */
+  const focusLogId = searchParams.get('log')
 
   useEffect(() => {
     if (!bookId || !unitId) return
@@ -63,6 +67,15 @@ export default function UnitView() {
       cancelled = true
     }
   }, [bookId, unitId])
+
+  // 目当てのログまで運ぶ。描画が終わってからでないと要素が無いので、
+  // ログの取得が済んだあとに実行する
+  useEffect(() => {
+    if (state.status !== 'ok' || !focusLogId) return
+    const element = document.getElementById(`log-${focusLogId}`)
+    if (!element) return
+    element.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [state.status, focusLogId])
 
   const unit = state.status === 'ok' ? state.unit : null
   const members = state.status === 'ok' ? state.members : []
@@ -122,7 +135,13 @@ export default function UnitView() {
               {state.logs.map((log) => {
                 const pages = formatPageRange(log.pageStart, log.pageEnd)
                 return (
-                  <li key={log.id} className="log-card">
+                  <li
+                    key={log.id}
+                    id={`log-${log.id}`}
+                    className={
+                      log.id === focusLogId ? 'log-card focused' : 'log-card'
+                    }
+                  >
                     <div className="log-head">
                       <span className="log-author">{nameOf(log.authorId)}</span>
                       {log.type !== 'none' && (
