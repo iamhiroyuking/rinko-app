@@ -7,6 +7,7 @@ import {
   LOG_TYPE_LABEL,
   type LogType,
 } from '../repository/logs'
+import { parseTagNames } from '../repository/tags'
 import { errorMessage } from '../lib/errorMessage'
 
 /** 空欄なら null、数字なら数値にする。数字でなければ null 扱い */
@@ -25,22 +26,27 @@ export default function AddLogView() {
   const [body, setBody] = useState('')
   const [pageStart, setPageStart] = useState('')
   const [pageEnd, setPageEnd] = useState('')
+  const [tagInput, setTagInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const tagNames = parseTagNames(tagInput)
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    if (!unitId) return
+    if (!unitId || !bookId) return
     setError(null)
     setBusy(true)
     try {
       await createLog({
         unitId,
+        bookId,
         type,
         title: title.trim() || null,
         body: body.trim(),
         pageStart: toPageNumber(pageStart),
         pageEnd: toPageNumber(pageEnd),
+        tagNames,
       })
       navigate(`/books/${bookId}/units/${unitId}`)
     } catch (caught: unknown) {
@@ -115,6 +121,25 @@ export default function AddLogView() {
               onChange={(e) => setPageEnd(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="tags">ハッシュタグ（任意）</label>
+          <input
+            id="tags"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            placeholder="空白かカンマで区切る（例: 正則化 過学習）"
+          />
+          {tagNames.length > 0 && (
+            <div className="tag-row">
+              {tagNames.map((name) => (
+                <span key={name} className="tag-chip">
+                  #{name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {error && <p className="screen-error">{error}</p>}

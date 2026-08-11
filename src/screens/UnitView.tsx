@@ -128,6 +128,15 @@ export default function UnitView() {
                     </div>
                     {log.title && <p className="log-title">{log.title}</p>}
                     <p className="log-body">{log.body}</p>
+                    {log.tagNames.length > 0 && (
+                      <div className="tag-row">
+                        {log.tagNames.map((name) => (
+                          <span key={name} className="tag-chip">
+                            #{name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 )
               })}
