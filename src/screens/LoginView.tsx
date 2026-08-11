@@ -1,18 +1,30 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import { useSession } from '../auth/SessionContext'
 import { signIn, signUp } from '../repository/auth'
 
 type Mode = 'login' | 'signup'
 
 export default function LoginView() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { session, loading } = useSession()
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // RequireLogin に追い返されたときに持たされた、行こうとしていた場所
+  const from =
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'from' in location.state &&
+    typeof location.state.from === 'string'
+      ? location.state.from
+      : '/'
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -24,12 +36,17 @@ export default function LoginView() {
       } else {
         await signIn(email, password)
       }
-      navigate('/')
+      navigate(from, { replace: true })
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : String(caught))
     } finally {
       setBusy(false)
     }
+  }
+
+  // 既にログインしている人にこの画面を見せる意味はない
+  if (!loading && session) {
+    return <Navigate to={from} replace />
   }
 
   return (
