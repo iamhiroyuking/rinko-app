@@ -3,12 +3,34 @@ import { Link, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { listBookMembers, type BookMember } from '../repository/members'
 import { getUnit, UNIT_STATUS_LABEL, type Unit } from '../repository/units'
+import {
+  formatPageRange,
+  listLogs,
+  LOG_TYPE_LABEL,
+  type LogEntry,
+} from '../repository/logs'
 import { errorMessage } from '../lib/errorMessage'
 
 type LoadState =
   | { status: 'loading' }
-  | { status: 'ok'; unit: Unit | null; members: BookMember[] }
+  | {
+      status: 'ok'
+      unit: Unit | null
+      members: BookMember[]
+      logs: LogEntry[]
+    }
   | { status: 'error'; message: string }
+
+/** 2026-08-11T03:51:34.267275+00:00 → 08/11 12:51 */
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mi = String(date.getMinutes()).padStart(2, '0')
+  return `${mm}/${dd} ${hh}:${mi}`
+}
 
 export default function UnitView() {
   const { bookId, unitId } = useParams()
@@ -20,11 +42,12 @@ export default function UnitView() {
     setState({ status: 'loading' })
 
     const load = async () => {
-      const [unit, members] = await Promise.all([
+      const [unit, members, logs] = await Promise.all([
         getUnit(unitId),
         listBookMembers(bookId),
+        listLogs(unitId),
       ])
-      return { unit, members }
+      return { unit, members, logs }
     }
 
     load()
@@ -42,16 +65,17 @@ export default function UnitView() {
   }, [bookId, unitId])
 
   const unit = state.status === 'ok' ? state.unit : null
-  const presenterName =
-    state.status === 'ok' && unit?.presenterId
-      ? (state.members.find((m) => m.userId === unit.presenterId)
-          ?.displayName ?? '不明')
-      : '未割当'
+  const members = state.status === 'ok' ? state.members : []
+
+  const nameOf = (userId: string | null) => {
+    if (!userId) return '未割当'
+    return members.find((m) => m.userId === userId)?.displayName ?? '不明'
+  }
 
   return (
     <ScreenFrame
       title={unit ? `第${unit.order}回　${unit.title}` : '回ごとの記録'}
-      description="この回に残された記録が並びます。"
+      description="新しい記録が上に並びます。"
     >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
@@ -65,7 +89,7 @@ export default function UnitView() {
         <p className="empty-state">この回は見つかりませんでした。</p>
       )}
 
-      {unit && (
+      {unit && state.status === 'ok' && (
         <>
           {unit.objective && (
             <div className="objective-card">
@@ -75,13 +99,47 @@ export default function UnitView() {
           )}
 
           <p className="screen-param">
-            担当: {presenterName} ・ {unit.scheduledDate ?? '日程未定'} ・{' '}
+            担当: {nameOf(unit.presenterId)} ・{' '}
+            {unit.scheduledDate ?? '日程未定'} ・{' '}
             {UNIT_STATUS_LABEL[unit.status]}
           </p>
+
+          {state.logs.length === 0 ? (
+            <p className="empty-state">
+              まだ記録がありません。「発言する」から残してください。
+            </p>
+          ) : (
+            <ul className="log-list">
+              {state.logs.map((log) => {
+                const pages = formatPageRange(log.pageStart, log.pageEnd)
+                return (
+                  <li key={log.id} className="log-card">
+                    <div className="log-head">
+                      <span className="log-author">{nameOf(log.authorId)}</span>
+                      {log.type !== 'none' && (
+                        <span className="log-type">
+                          {LOG_TYPE_LABEL[log.type]}
+                        </span>
+                      )}
+                      {pages && <span className="log-page">{pages}</span>}
+                      <span className="log-time">
+                        {formatTimestamp(log.createdAt)}
+                      </span>
+                    </div>
+                    {log.title && <p className="log-title">{log.title}</p>}
+                    <p className="log-body">{log.body}</p>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </>
       )}
 
       <nav className="screen-nav">
+        {unit && (
+          <Link to={`/books/${bookId}/units/${unitId}/logs/new`}>発言する</Link>
+        )}
         <Link to={`/books/${bookId}/units`}>回のリストへ戻る</Link>
       </nav>
     </ScreenFrame>
