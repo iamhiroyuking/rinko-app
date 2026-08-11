@@ -4,6 +4,7 @@ import RequireLogin from './auth/RequireLogin'
 import LoginView from './screens/LoginView'
 import HomeView from './screens/HomeView'
 import AddBookView from './screens/AddBookView'
+import JoinBookView from './screens/JoinBookView'
 import BookSummaryView from './screens/BookSummaryView'
 import SeminarView from './screens/SeminarView'
 import CreateUnitView from './screens/CreateUnitView'
@@ -29,6 +30,9 @@ export default function App() {
           <Route element={<RequireLogin />}>
             <Route path="/" element={<HomeView />} />
             <Route path="/books/new" element={<AddBookView />} />
+            {/* 招待リンクの行き先。関門の内側なので、未ログインなら
+                ログイン画面へ送られ、ログイン後にここへ戻ってくる */}
+            <Route path="/join/:token" element={<JoinBookView />} />
             <Route path="/books/:bookId" element={<BookSummaryView />} />
             <Route path="/books/:bookId/units" element={<SeminarView />} />
             <Route

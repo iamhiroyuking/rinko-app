@@ -11,21 +11,35 @@ export type ShelfBook = {
   coverImageUrl: BookRow['cover_image_url']
   shelfStatus: MembershipRow['shelf_status']
   displayOrder: MembershipRow['display_order']
+  /** 自分を含む参加者の人数。2人以上なら共有されている */
+  memberCount: number
 }
 
 /**
  * 自分の本棚にある教材を取り出す。
  *
- * 参加している教材だけが返る。これはこちらで絞り込んでいるのではなく、
- * データベース側の行レベルセキュリティがそう判断している。
+ * `user_id` で自分の参加情報だけに絞っているのが要点。
+ * 行レベルセキュリティに任せてはいけない。参加者名を表示するために、
+ * 「自分が参加している教材の参加者全員」を読める設定にしてあるので、
+ * 絞らないと共有相手の参加情報まで返ってきて同じ教材が重複する。
+ *
  * ゴミ箱に入れたもの（deleted_at が入っているもの）は除く。
  */
 export async function listShelfBooks(
   shelfStatus: MembershipRow['shelf_status'] = 'reading',
 ): Promise<ShelfBook[]> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
   const { data, error } = await supabase
     .from('memberships')
-    .select('display_order, shelf_status, books (id, title, cover_image_url)')
+    .select(
+      'display_order, shelf_status, books (id, title, cover_image_url, memberships (user_id))',
+    )
+    .eq('user_id', userId)
     .is('deleted_at', null)
     .eq('shelf_status', shelfStatus)
     .order('display_order')
@@ -42,6 +56,7 @@ export async function listShelfBooks(
         coverImageUrl: row.books.cover_image_url,
         shelfStatus: row.shelf_status,
         displayOrder: row.display_order,
+        memberCount: row.books.memberships?.length ?? 1,
       },
     ]
   })
