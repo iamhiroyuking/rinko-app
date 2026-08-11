@@ -1,17 +1,119 @@
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import { listBookMembers, type BookMember } from '../repository/members'
+import { createUnit } from '../repository/units'
+import { errorMessage } from '../lib/errorMessage'
 
 export default function CreateUnitView() {
   const { bookId } = useParams()
+  const navigate = useNavigate()
+  const [members, setMembers] = useState<BookMember[]>([])
+  const [title, setTitle] = useState('')
+  const [objective, setObjective] = useState('')
+  const [presenterId, setPresenterId] = useState('')
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!bookId) return
+    let cancelled = false
+
+    listBookMembers(bookId)
+      .then((list) => {
+        if (cancelled) return
+        setMembers(list)
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) setError(errorMessage(caught))
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [bookId])
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!bookId) return
+    setError(null)
+    setBusy(true)
+    try {
+      const unitId = await createUnit({
+        bookId,
+        title: title.trim(),
+        objective: objective.trim() || null,
+        presenterId: presenterId || null,
+        scheduledDate: scheduledDate || null,
+      })
+      navigate(`/books/${bookId}/units/${unitId}`)
+    } catch (caught: unknown) {
+      setError(errorMessage(caught))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <ScreenFrame
       title="回を作成"
-      description="タイトル・この回で学ぶこと・担当者・輪講日を入力する。作成後はその回へ遷移する。"
+      description="第N回の番号は自動で振られます。後から編集できます。"
     >
-      <nav className="screen-nav">
-        <Link to={`/books/${bookId}/units/demo`}>作成したことにして回へ</Link>
-      </nav>
+      <form className="form" onSubmit={handleSubmit}>
+        <div className="field">
+          <label htmlFor="title">タイトル</label>
+          <input
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="例: 線形識別モデル"
+            required
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="objective">この回で学ぶこと（任意）</label>
+          <input
+            id="objective"
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+            placeholder="一言で"
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="presenter">担当者（任意）</label>
+          <select
+            id="presenter"
+            value={presenterId}
+            onChange={(e) => setPresenterId(e.target.value)}
+          >
+            <option value="">未割当</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.displayName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="scheduledDate">輪講の日（任意）</label>
+          <input
+            id="scheduledDate"
+            type="date"
+            value={scheduledDate}
+            onChange={(e) => setScheduledDate(e.target.value)}
+          />
+        </div>
+
+        {error && <p className="screen-error">{error}</p>}
+
+        <button type="submit" className="primary-button" disabled={busy}>
+          {busy ? '作成中…' : '作成する'}
+        </button>
+      </form>
     </ScreenFrame>
   )
 }

@@ -11,6 +11,10 @@
   --accent: #2e6355;
   --danger: #a6543d;
   --danger-bg: #f3e1da;
+  --warn: #7a4e14;
+  --warn-bg: #f5e3c8;
+  --done: #1f5b49;
+  --done-bg: #dcebe3;
 
   font-family:
     -apple-system, BlinkMacSystemFont, 'Hiragino Sans',
@@ -27,6 +31,10 @@
     --accent: #6fae93;
     --danger: #d98266;
     --danger-bg: #3a241c;
+    --warn: #e3a857;
+    --warn-bg: #3a2c14;
+    --done: #6fae93;
+    --done-bg: #1c3a2e;
   }
 }
 
@@ -87,6 +95,106 @@ body {
   border-top: 1px solid var(--line);
   padding-top: 1rem;
   font-size: 0.875rem;
+}
+
+.unit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.unit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.unit-row:hover {
+  border-color: var(--accent);
+}
+
+.unit-order {
+  flex-shrink: 0;
+  width: 4rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.unit-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.unit-title {
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.unit-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.pill {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-not_started {
+  background: var(--line);
+  color: var(--muted);
+}
+
+.status-in_progress {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.status-done {
+  background: var(--done-bg);
+  color: var(--done);
+}
+
+.objective-card {
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.6rem;
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: 0.875rem;
+}
+
+.objective-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+  margin-bottom: 0.15rem;
+}
+
+.field select {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 .empty-state {
