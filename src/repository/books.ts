@@ -47,6 +47,34 @@ export async function listShelfBooks(
   })
 }
 
+export type Book = {
+  id: string
+  title: string
+  coverImageUrl: string | null
+  goal: string | null
+  createdBy: string
+}
+
+/** 教材そのものを取り出す。参加していなければ null が返る（行レベルセキュリティ） */
+export async function getBook(bookId: string): Promise<Book | null> {
+  const { data, error } = await supabase
+    .from('books')
+    .select('id, title, cover_image_url, goal, created_by')
+    .eq('id', bookId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  return {
+    id: data.id,
+    title: data.title,
+    coverImageUrl: data.cover_image_url,
+    goal: data.goal,
+    createdBy: data.created_by,
+  }
+}
+
 export type NewBook = {
   title: string
   coverImageUrl?: string | null
