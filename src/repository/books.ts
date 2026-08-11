@@ -46,3 +46,31 @@ export async function listShelfBooks(
     ]
   })
 }
+
+export type NewBook = {
+  title: string
+  coverImageUrl?: string | null
+  goal?: string | null
+}
+
+/**
+ * 教材を作り、そのidを返す。
+ *
+ * 素直に `insert(...).select('id')` と書くと失敗する。教材の閲覧は
+ * 「参加していること」が条件で、作成者を参加者にするのは AFTER INSERT
+ * トリガーだが、AFTER 行トリガーは文の終わりに動くのに対し RETURNING は
+ * 行を処理する時点で作られるため、まだ参加情報が無い状態で弾かれてしまう。
+ *
+ * そのためデータベース側の create_book 関数を呼ぶ。詳しい理由は
+ * supabase/migrations/20260811045139_create_book_function.sql に書いてある。
+ */
+export async function createBook(input: NewBook): Promise<string> {
+  const { data, error } = await supabase.rpc('create_book', {
+    book_title: input.title,
+    book_cover_image_url: input.coverImageUrl ?? undefined,
+    book_goal: input.goal ?? undefined,
+  })
+
+  if (error) throw error
+  return data
+}
