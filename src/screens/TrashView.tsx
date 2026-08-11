@@ -5,6 +5,7 @@ export default function TrashView() {
     <ScreenFrame
       title="ゴミ箱"
       description="削除した教材と回。復元と完全削除ができる。"
+      backTo="/"
     />
   )
 }
