@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import SessionProvider from './auth/SessionProvider'
 import LoginView from './screens/LoginView'
 import HomeView from './screens/HomeView'
 import AddBookView from './screens/AddBookView'
@@ -16,22 +17,24 @@ import TrashView from './screens/TrashView'
  */
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginView />} />
-        <Route path="/" element={<HomeView />} />
-        <Route path="/books/new" element={<AddBookView />} />
-        <Route path="/books/:bookId" element={<BookSummaryView />} />
-        <Route path="/books/:bookId/units" element={<SeminarView />} />
-        <Route path="/books/:bookId/units/new" element={<CreateUnitView />} />
-        <Route path="/books/:bookId/units/:unitId" element={<UnitView />} />
-        <Route
-          path="/books/:bookId/units/:unitId/logs/new"
-          element={<AddLogView />}
-        />
-        <Route path="/books/:bookId/search" element={<SearchView />} />
-        <Route path="/trash" element={<TrashView />} />
-      </Routes>
-    </BrowserRouter>
+    <SessionProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginView />} />
+          <Route path="/" element={<HomeView />} />
+          <Route path="/books/new" element={<AddBookView />} />
+          <Route path="/books/:bookId" element={<BookSummaryView />} />
+          <Route path="/books/:bookId/units" element={<SeminarView />} />
+          <Route path="/books/:bookId/units/new" element={<CreateUnitView />} />
+          <Route path="/books/:bookId/units/:unitId" element={<UnitView />} />
+          <Route
+            path="/books/:bookId/units/:unitId/logs/new"
+            element={<AddLogView />}
+          />
+          <Route path="/books/:bookId/search" element={<SearchView />} />
+          <Route path="/trash" element={<TrashView />} />
+        </Routes>
+      </BrowserRouter>
+    </SessionProvider>
   )
 }
