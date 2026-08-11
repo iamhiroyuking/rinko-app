@@ -43,10 +43,11 @@ Book:       id, title, cover_image_url, goal, created_by
 Membership: id, book_id, user_id, role(editor|viewer),
             shelf_status(planned|reading|finished), display_order, deleted_at
 InviteLink: id, book_id, token, role, created_by
-Unit:       id, book_id, order, title, objective, presenter_id,
-            scheduled_date, status(not_started|in_progress|done), deleted_at
+Unit:       id, book_id, order, title, objective, presenter_id, scheduled_date,
+            status(not_started|in_progress|done), created_by, deleted_at
 Log:        id, unit_id, author_id, parent_log_id, type(none|preview|question|review),
-            title, body, page_start, page_end, is_marked
+            title, body, page_start, page_end
+LogMark:    log_id, user_id   ← 個人のしおり
 Tag:        id, book_id, name
 LogTag:     log_id, tag_id
 Attachment: id, log_id, file_url, file_name, mime_type
@@ -81,9 +82,13 @@ CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - [ ] スキーマの適用と接続確認（Issue #2）
 - [ ] M1「輪講で実際に使える」まで到達（8/20期限、Issue #5〜#10）
 
-### 未決の設計論点（`docs/open-questions.md`）
-Q1 ログのマークは個人の栞か共有の印か / Q2 回を削除したとき誰のゴミ箱に入るか。
-**この2つはデータの持ち方が変わるので、スキーマを適用する前に決める。**
+### 共有されているものの扱い（原則）
+**追加と編集は参加者全員に同期し、削除だけは作った本人しかできない。**
+回を削除すると全員の画面から消えるが、ゴミ箱に出て復元できるのは作成者だけ（`Unit.created_by`）。
+ログのしおりは個人のもので他人には見えない（`log_marks` テーブル）。
+
+データの持ち方に影響する論点はすべて決着済み。残るQ3（添付ファイルの保護方針）と
+Q4（第N回の番号が重複したときの並び順）は実装時の判断で足りる。
 
 ### 実装計画の要点（詳細は docs/issues.md）
 Issueは縦切り（1つが「画面→データ取得→保存」まで通る単位）で分割してある。

@@ -60,6 +60,10 @@ create table public.invite_links (
 );
 
 -- 回
+--
+-- 追加と編集は参加者全員で同期する共有データだが、削除だけは作った本人しかできない。
+-- 削除すると全員の画面から消える（回そのものが無くなる共有動作）が、
+-- ゴミ箱に出て復元できるのは作った人だけなので、created_by を持つ。
 create table public.units (
   id             uuid primary key default gen_random_uuid(),
   book_id        uuid        not null references public.books (id) on delete cascade,
@@ -70,6 +74,7 @@ create table public.units (
   scheduled_date date,
   status         text        not null default 'not_started'
                    check (status in ('not_started', 'in_progress', 'done')),
+  created_by     uuid        not null references public.profiles (id),
   deleted_at     timestamptz,
   created_at     timestamptz not null default now()
 );
@@ -86,9 +91,20 @@ create table public.logs (
   body          text        not null,
   page_start    integer,
   page_end      integer,
-  is_marked     boolean     not null default false,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
+);
+
+-- ログのマーク（しおり）
+--
+-- 「後からもう一度振り返りたい」という個人の目印なので、ログ本体には持たせない。
+-- logs.is_marked のように共有の列にすると、他人のマークが自分の画面に出てしまい
+-- 復習の目印として機能しなくなる。
+create table public.log_marks (
+  log_id     uuid        not null references public.logs (id) on delete cascade,
+  user_id    uuid        not null references public.profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (log_id, user_id)
 );
 
 -- ハッシュタグ。サジェストは教材ごとに出すので book_id を持つ
@@ -127,6 +143,7 @@ create index invite_links_book_id_idx on public.invite_links (book_id);
 create index units_book_id_idx        on public.units (book_id);
 create index logs_unit_id_idx         on public.logs (unit_id);
 create index logs_parent_log_id_idx   on public.logs (parent_log_id);
+create index log_marks_user_id_idx    on public.log_marks (user_id);
 create index tags_book_id_idx         on public.tags (book_id);
 create index log_tags_tag_id_idx      on public.log_tags (tag_id);
 create index attachments_log_id_idx   on public.attachments (log_id);
@@ -213,6 +230,7 @@ alter table public.memberships  enable row level security;
 alter table public.invite_links enable row level security;
 alter table public.units        enable row level security;
 alter table public.logs         enable row level security;
+alter table public.log_marks    enable row level security;
 alter table public.tags         enable row level security;
 alter table public.log_tags     enable row level security;
 alter table public.attachments  enable row level security;
@@ -295,17 +313,34 @@ create policy "members can read units"
 create policy "editors can create units"
   on public.units for insert
   to authenticated
-  with check (public.can_edit (book_id));
+  with check (public.can_edit (book_id) and created_by = auth.uid());
 
+-- 編集は参加者全員で同期する。ただし deleted_at の変更だけは
+-- 下の protect_unit_deletion トリガーで作成者に限定している
 create policy "editors can update units"
   on public.units for update
   to authenticated
   using (public.can_edit (book_id));
 
-create policy "editors can delete units"
+-- 完全削除は作成者のみ。
+-- ただし作成者がその教材から抜けてしまうと誰も片付けられなくなるため、
+-- その場合は編集者なら削除できる。
+create policy "creators can delete their own units"
   on public.units for delete
   to authenticated
-  using (public.can_edit (book_id));
+  using (
+    public.can_edit (book_id)
+    and (
+      created_by = auth.uid()
+      or not exists (
+        select 1
+          from public.memberships m
+         where m.book_id = units.book_id
+           and m.user_id = units.created_by
+           and m.deleted_at is null
+      )
+    )
+  );
 
 -- logs: 参加者は読める。投稿は編集者、編集と削除は本人のみ
 create policy "members can read logs"
@@ -330,6 +365,25 @@ create policy "authors can delete their own logs"
   on public.logs for delete
   to authenticated
   using (author_id = auth.uid());
+
+-- log_marks: 自分のマークだけを読み書きできる。他人のマークは見えない
+create policy "users can read their own marks"
+  on public.log_marks for select
+  to authenticated
+  using (user_id = auth.uid());
+
+create policy "users can add their own marks"
+  on public.log_marks for insert
+  to authenticated
+  with check (
+    user_id = auth.uid()
+    and public.is_member (public.book_id_of_log (log_id))
+  );
+
+create policy "users can remove their own marks"
+  on public.log_marks for delete
+  to authenticated
+  using (user_id = auth.uid());
 
 -- tags
 create policy "members can read tags"
@@ -530,3 +584,42 @@ create trigger on_membership_deleted
   after delete on public.memberships
   for each row
   execute function public.delete_orphan_book ();
+
+-- ---------------------------------------------------------------------------
+-- 回のゴミ箱入れ・復元を作成者に限定する
+--
+-- 回の編集は参加者全員で同期させたいので update そのものは編集者全員に許すが、
+-- 削除だけは作った本人しかできないようにしたい。
+-- 行レベルセキュリティのポリシーは「どの列が変わったか」を区別できないため、
+-- deleted_at の変化だけをトリガーで見張る。
+--
+-- 作成者がその教材から抜けている場合は、誰も片付けられなくなるので許可する。
+-- ---------------------------------------------------------------------------
+
+create or replace function public.protect_unit_deletion ()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.deleted_at is distinct from old.deleted_at
+     and old.created_by <> auth.uid()
+     and exists (
+       select 1
+         from public.memberships m
+        where m.book_id = old.book_id
+          and m.user_id = old.created_by
+          and m.deleted_at is null
+     )
+  then
+    raise exception '回を削除・復元できるのは作成者だけです';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger before_unit_update
+  before update on public.units
+  for each row
+  execute function public.protect_unit_deletion ();
