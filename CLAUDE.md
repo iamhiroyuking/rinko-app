@@ -57,9 +57,12 @@ Attachment: id, log_id, file_url, file_name, mime_type
 
 **個人の状態と共有の状態を必ず区別する。** 「その人の画面がどう見えるか」に属する情報を `Book` や `Unit` に置くと、誰かの操作が共有相手全員に波及する。本棚のステータス・並び順・削除はすべて `Membership` 側にある。
 
-## 画面（10枚）
-LoginView / HomeView / AddBookView / BookSummaryView / SeminarView /
-CreateUnitView / UnitView / AddLogView / SearchView / TrashView
+## 画面（11枚）
+LoginView / HomeView / AddBookView / **JoinBookView** / BookSummaryView /
+SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
+
+`JoinBookView`（`/join/<token>`）は招待リンクの行き先。設計段階の10画面には無かったが、
+リンクを押して参加できる形にするために追加した。
 
 `docs/prototype/screen-flow-demo.html` はv1時点の9画面で作ったクリッカブルデモ。ログイン・ゴミ箱・返信などv2の変更は未反映。
 
@@ -68,7 +71,7 @@ CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 |---|---|
 | `docs/requirements.md` | なぜ作るか、課題、MVP範囲、データモデル、各種ポリシー |
 | `docs/features.md` | **画面ごとの機能一覧。** 個人の状態(👤)と共有の状態(👥)を明示している |
-| `docs/screen-flow.md` | 10画面と遷移、画面ごとの仕様 |
+| `docs/screen-flow.md` | 11画面と遷移、画面ごとの仕様 |
 | `docs/issues.md` | 実装計画（29件のIssueと依存関係） |
 | `docs/open-questions.md` | 未決事項と、決着した論点の記録 |
 
@@ -78,7 +81,7 @@ CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 
 - [x] 要件定義 v2・画面遷移図 v2・データモデル・機能一覧
 - [x] 技術スタック確定（Vite + React + TS / Supabase / Vercel）
-- [x] 開発環境の構築と10画面のルーティング（#1）
+- [x] 開発環境の構築と画面のルーティング（#1）
 - [x] Supabaseプロジェクト作成・スキーマ適用・接続確認（#2）
 - [x] サインアップ・ログイン・ログアウト（#3）
 - [x] 未ログインではどの画面も見えない（#4）
