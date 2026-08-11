@@ -102,6 +102,11 @@ export default function HomeView() {
                       </span>
                     )}
                     <span className="book-title">{book.title}</span>
+                    {book.memberCount > 1 && (
+                      <span className="book-shared">
+                        <span aria-hidden>👥</span> {book.memberCount}人で共有
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}
