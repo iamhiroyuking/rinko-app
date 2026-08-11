@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { useSession } from '../auth/SessionContext'
 import { signIn, signUp } from '../repository/auth'
+import { errorMessage } from '../lib/errorMessage'
 
 type Mode = 'login' | 'signup'
 
@@ -38,7 +39,7 @@ export default function LoginView() {
       }
       navigate(from, { replace: true })
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : String(caught))
+      setError(errorMessage(caught))
     } finally {
       setBusy(false)
     }

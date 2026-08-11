@@ -5,6 +5,7 @@ import { useSession } from '../auth/SessionContext'
 import { signOut } from '../repository/auth'
 import { getMyProfile, type Profile } from '../repository/profiles'
 import { listShelfBooks, type ShelfBook } from '../repository/books'
+import { errorMessage } from '../lib/errorMessage'
 
 type LoadState =
   | { status: 'loading' }
@@ -34,8 +35,7 @@ export default function HomeView() {
       })
       .catch((caught: unknown) => {
         if (cancelled) return
-        const message =
-          caught instanceof Error ? caught.message : String(caught)
+        const message = errorMessage(caught)
         setState({ status: 'error', message })
       })
 
@@ -50,10 +50,7 @@ export default function HomeView() {
   }
 
   return (
-    <ScreenFrame
-      title="ホーム"
-      description="学習中の教材を本棚として並べる。フィルタで学習予定・学習済みに切り替える。"
-    >
+    <ScreenFrame title="本棚" description="学習中の教材が並びます。">
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
       )}
@@ -63,26 +60,44 @@ export default function HomeView() {
       )}
 
       {state.status === 'ok' && (
-        <div className="stack">
+        <>
           <p className="screen-param">
             {state.profile
               ? `${state.profile.display_name} としてログイン中`
               : '⚠️ プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）'}
           </p>
 
-          <p className="screen-param">本棚の教材: {state.books.length}件</p>
-
-          {state.books.length === 0 && (
-            <p className="screen-param">
+          {state.books.length === 0 ? (
+            <p className="empty-state">
               まだ教材がありません。「教材を追加」から始めてください。
             </p>
+          ) : (
+            <ul className="shelf">
+              {state.books.map((book) => (
+                <li key={book.id}>
+                  <Link className="book-card" to={`/books/${book.id}`}>
+                    {book.coverImageUrl ? (
+                      <img
+                        className="book-cover"
+                        src={book.coverImageUrl}
+                        alt=""
+                      />
+                    ) : (
+                      <span className="book-cover book-cover-blank" aria-hidden>
+                        📖
+                      </span>
+                    )}
+                    <span className="book-title">{book.title}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
+        </>
       )}
 
       <nav className="screen-nav">
         <Link to="/books/new">教材を追加</Link>
-        <Link to="/books/demo">教材を開く（概要へ）</Link>
         <Link to="/trash">ゴミ箱</Link>
         <button type="button" className="link-button" onClick={handleSignOut}>
           ログアウト
