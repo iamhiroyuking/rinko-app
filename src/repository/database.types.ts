@@ -382,6 +382,8 @@ export type Database = {
           id: string
           objective: string | null
           order: number
+          page_from: number | null
+          page_to: number | null
           presenter_id: string | null
           scheduled_date: string | null
           status: string
@@ -395,6 +397,8 @@ export type Database = {
           id?: string
           objective?: string | null
           order: number
+          page_from?: number | null
+          page_to?: number | null
           presenter_id?: string | null
           scheduled_date?: string | null
           status?: string
@@ -408,6 +412,8 @@ export type Database = {
           id?: string
           objective?: string | null
           order?: number
+          page_from?: number | null
+          page_to?: number | null
           presenter_id?: string | null
           scheduled_date?: string | null
           status?: string
@@ -443,6 +449,7 @@ export type Database = {
     }
     Functions: {
       book_id_of_log: { Args: { target_log_id: string }; Returns: string }
+      book_id_of_tag: { Args: { target_tag_id: string }; Returns: string }
       book_id_of_unit: { Args: { target_unit_id: string }; Returns: string }
       can_edit: { Args: { target_book_id: string }; Returns: boolean }
       create_book: {
@@ -455,6 +462,7 @@ export type Database = {
       }
       is_member: { Args: { target_book_id: string }; Returns: boolean }
       join_book_with_token: { Args: { invite_token: string }; Returns: string }
+      shares_book_with: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

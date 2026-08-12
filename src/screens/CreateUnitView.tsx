@@ -4,6 +4,7 @@ import ScreenFrame from '../components/ScreenFrame'
 import { listBookMembers, type BookMember } from '../repository/members'
 import { createUnit } from '../repository/units'
 import { errorMessage } from '../lib/errorMessage'
+import { toPageNumber, validatePageRange } from '../lib/pageRange'
 
 export default function CreateUnitView() {
   const { bookId } = useParams()
@@ -13,6 +14,8 @@ export default function CreateUnitView() {
   const [objective, setObjective] = useState('')
   const [presenterId, setPresenterId] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
+  const [pageFrom, setPageFrom] = useState('')
+  const [pageTo, setPageTo] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,6 +41,15 @@ export default function CreateUnitView() {
     event.preventDefault()
     if (!bookId) return
     setError(null)
+
+    const from = toPageNumber(pageFrom)
+    const to = toPageNumber(pageTo)
+    const validationError = validatePageRange(from, to)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setBusy(true)
     try {
       const unitId = await createUnit({
@@ -46,6 +58,8 @@ export default function CreateUnitView() {
         objective: objective.trim() || null,
         presenterId: presenterId || null,
         scheduledDate: scheduledDate || null,
+        pageFrom: from,
+        pageTo: to,
       })
       navigate(`/books/${bookId}/units/${unitId}`)
     } catch (caught: unknown) {
@@ -108,6 +122,36 @@ export default function CreateUnitView() {
             onChange={(e) => setScheduledDate(e.target.value)}
           />
         </div>
+
+        <div className="field-row">
+          <div className="field">
+            <label htmlFor="pageFrom">進んだページ・開始（任意）</label>
+            <input
+              id="pageFrom"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="〜から"
+              value={pageFrom}
+              onChange={(e) => setPageFrom(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="pageTo">進んだページ・終了（任意）</label>
+            <input
+              id="pageTo"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="〜まで"
+              value={pageTo}
+              onChange={(e) => setPageTo(e.target.value)}
+            />
+          </div>
+        </div>
+        <p className="panel-note">
+          今分かる分だけで構いません。開始ページだけ書いて、この回が終わってから終了ページを追記できます。
+        </p>
 
         {error && <p className="screen-error">{error}</p>}
 

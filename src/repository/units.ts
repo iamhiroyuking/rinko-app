@@ -14,6 +14,8 @@ export type Unit = {
   scheduledDate: string | null
   status: UnitStatus
   createdBy: string
+  pageFrom: number | null
+  pageTo: number | null
 }
 
 export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = {
@@ -32,6 +34,8 @@ function toUnit(row: UnitRow): Unit {
     scheduledDate: row.scheduled_date,
     status: row.status,
     createdBy: row.created_by,
+    pageFrom: row.page_from,
+    pageTo: row.page_to,
   }
 }
 
@@ -69,6 +73,8 @@ export type NewUnit = {
   objective?: string | null
   presenterId?: string | null
   scheduledDate?: string | null
+  pageFrom?: number | null
+  pageTo?: number | null
 }
 
 /**
@@ -116,10 +122,32 @@ export async function createUnit(input: NewUnit): Promise<string> {
       presenter_id: input.presenterId ?? null,
       scheduled_date: input.scheduledDate ?? null,
       created_by: userId,
+      page_from: input.pageFrom ?? null,
+      page_to: input.pageTo ?? null,
     })
     .select('id')
     .single()
 
   if (error) throw error
   return data.id
+}
+
+/**
+ * 進んだページ範囲だけを更新する。
+ *
+ * 回を開始する前に開始ページだけ埋めておき、終わったら終了ページを
+ * 追記する、という2段階の入力を想定しているので、他の項目とは
+ * 分けて更新できるようにしている。
+ */
+export async function updateUnitPageRange(
+  unitId: string,
+  pageFrom: number | null,
+  pageTo: number | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('units')
+    .update({ page_from: pageFrom, page_to: pageTo })
+    .eq('id', unitId)
+
+  if (error) throw error
 }

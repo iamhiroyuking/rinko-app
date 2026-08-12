@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { listBookMembers, type BookMember } from '../repository/members'
-import { getUnit, UNIT_STATUS_LABEL, type Unit } from '../repository/units'
+import {
+  getUnit,
+  updateUnitPageRange,
+  UNIT_STATUS_LABEL,
+  type Unit,
+} from '../repository/units'
 import {
   formatPageRange,
   listLogs,
@@ -10,6 +15,11 @@ import {
   type LogEntry,
 } from '../repository/logs'
 import { errorMessage } from '../lib/errorMessage'
+import {
+  formatUnitPageRange,
+  toPageNumber,
+  validatePageRange,
+} from '../lib/pageRange'
 
 type LoadState =
   | { status: 'loading' }
@@ -36,6 +46,11 @@ export default function UnitView() {
   const { bookId, unitId } = useParams()
   const [searchParams] = useSearchParams()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [editingPages, setEditingPages] = useState(false)
+  const [pageFromInput, setPageFromInput] = useState('')
+  const [pageToInput, setPageToInput] = useState('')
+  const [pagesBusy, setPagesBusy] = useState(false)
+  const [pagesError, setPagesError] = useState<string | null>(null)
 
   /** 検索結果から飛んできたときに指定される、目当てのログ */
   const focusLogId = searchParams.get('log')
@@ -85,6 +100,43 @@ export default function UnitView() {
     return members.find((m) => m.userId === userId)?.displayName ?? '不明'
   }
 
+  function startEditingPages() {
+    if (!unit) return
+    setPageFromInput(unit.pageFrom !== null ? String(unit.pageFrom) : '')
+    setPageToInput(unit.pageTo !== null ? String(unit.pageTo) : '')
+    setPagesError(null)
+    setEditingPages(true)
+  }
+
+  async function savePages(event: React.FormEvent) {
+    event.preventDefault()
+    if (!unit) return
+
+    const from = toPageNumber(pageFromInput)
+    const to = toPageNumber(pageToInput)
+    const validationError = validatePageRange(from, to)
+    if (validationError) {
+      setPagesError(validationError)
+      return
+    }
+
+    setPagesError(null)
+    setPagesBusy(true)
+    try {
+      await updateUnitPageRange(unit.id, from, to)
+      setState((prev) =>
+        prev.status === 'ok' && prev.unit
+          ? { ...prev, unit: { ...prev.unit, pageFrom: from, pageTo: to } }
+          : prev,
+      )
+      setEditingPages(false)
+    } catch (caught: unknown) {
+      setPagesError(errorMessage(caught))
+    } finally {
+      setPagesBusy(false)
+    }
+  }
+
   return (
     <ScreenFrame
       title={unit ? `第${unit.order}回　${unit.title}` : '回ごとの記録'}
@@ -125,6 +177,73 @@ export default function UnitView() {
             {unit.scheduledDate ?? '日程未定'} ・{' '}
             {UNIT_STATUS_LABEL[unit.status]}
           </p>
+
+          <section className="panel">
+            <h2 className="panel-title">進んだページ</h2>
+            {editingPages ? (
+              <form className="form" onSubmit={savePages}>
+                <div className="field-row">
+                  <div className="field">
+                    <label htmlFor="pageFromInput">開始</label>
+                    <input
+                      id="pageFromInput"
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      placeholder="〜から"
+                      value={pageFromInput}
+                      onChange={(e) => setPageFromInput(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="pageToInput">終了</label>
+                    <input
+                      id="pageToInput"
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      placeholder="〜まで"
+                      value={pageToInput}
+                      onChange={(e) => setPageToInput(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {pagesError && <p className="screen-error">{pagesError}</p>}
+
+                <div className="button-row">
+                  <button
+                    type="button"
+                    className="quiet-button"
+                    onClick={() => setEditingPages(false)}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="submit"
+                    className="secondary-button"
+                    disabled={pagesBusy}
+                  >
+                    {pagesBusy ? '保存中…' : '保存する'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <p className="panel-note">
+                  {formatUnitPageRange(unit.pageFrom, unit.pageTo) ??
+                    'まだ記録がありません。'}
+                </p>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={startEditingPages}
+                >
+                  編集する
+                </button>
+              </>
+            )}
+          </section>
 
           {state.logs.length === 0 ? (
             <p className="empty-state">
