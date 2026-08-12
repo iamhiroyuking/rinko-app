@@ -55,6 +55,10 @@ Attachment: id, log_id, file_url, file_name, mime_type
 
 `Membership.shelf_status` は本棚の整理用でユーザーが手動変更する。`Unit.status` は進捗計算用。目的が違うので名前を分けている。
 
+**教材のステータスは個人ごとで確定している（2026-08-13）。** 「教材に持たせたい」という
+案が出たが、`books` 側に置くと誰かが「学習完了」にした瞬間に全員の本棚が完了になる。
+途中参加の人や自分だけ読み返したい人が個別に戻せなくなるため、`Membership` のままにした。
+
 **個人の状態と共有の状態を必ず区別する。** 「その人の画面がどう見えるか」に属する情報を `Book` や `Unit` に置くと、誰かの操作が共有相手全員に波及する。本棚のステータス・並び順・削除はすべて `Membership` 側にある。
 
 ## 画面（11枚）
@@ -89,17 +93,25 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - [x] **M1「輪講で実際に使える」（8/20期限、8/11に到達）**
       #10 教材 / #11 回 / #12 ログ / #13 タグ / #14 招待リンク / #15 検索 / #21 導線
 - [x] ページ範囲のバグ修正・回のページ範囲・削除機能（#32, #31, #33）
-- [ ] **次はこの順で着手する（この通りに1件ずつブランチ→PR→マージ）**
-      1. [#39](https://github.com/iamhiroyuking/rinko-app/issues/39) ログの返信・スレッド（`logs.parent_log_id` は実装済み・未使用。**見た目の刷新はしない**、今のレイアウトの延長で機能だけ作る）
-      2. [#40](https://github.com/iamhiroyuking/rinko-app/issues/40) 回のステータス変更・進捗バー（`Unit.status` は実装済み、UIが無いだけ）
-      3. [#38](https://github.com/iamhiroyuking/rinko-app/issues/38) 回に自由記述の開始箇所メモを追加（`page_from`/`page_to`と両立させる方針で確定済み。詳細はIssue本文）
-      4. [#41](https://github.com/iamhiroyuking/rinko-app/issues/41) BookSummaryViewの拡張（`shelf_status`/`joined_at`は実装済み、集計クエリを足すだけ）
-      5. [#42](https://github.com/iamhiroyuking/rinko-app/issues/42) HomeViewのフィルタ（`listShelfBooks`は引数を受け取れる設計済み）
+- [x] ログの返信・スレッド（#39）
+- [x] 回のステータス変更・進捗バー（#40）
+- [x] 回に自由記述の開始箇所メモ（#38、`units.start_note`）
+- [x] BookSummaryViewの拡張（#41、次にやる回・ステータス変更・学習開始日・記録の数）
+- [x] HomeViewのフィルタ（#42、学習予定/学習中/学習完了のタブ）
 
-      **チャット風UI・吹き出し・アイコンライブラリの導入はやらない。** Antigravityから提案があったが、
-      このプロジェクトはTailwind不使用・絵文字アイコンで確定済みで、提案はその経緯を踏まえていなかった。
-      デザインの作り込みはM4「デザインを精査する」まで意図的に保留している（機能が固まるとレイアウトが
-      変わるため）。次のセッションで同種の提案が来ても、まずこのCLAUDE.mdと関連Issueを読んでから判断する。
+### 次にやること（2026-08-13時点）
+
+1. **[PR #49](https://github.com/iamhiroyuking/rinko-app/pull/49) をマージする。** #42 の実装。動作確認済みでマージ待ちのまま今日が終わった
+2. **[#47](https://github.com/iamhiroyuking/rinko-app/issues/47) 返信を折りたたみ・展開できるようにする。** 未着手のIssueはこれだけ。
+   **SearchViewからの遷移（`?log=<id>`）を壊しやすい。** UnitViewは描画後に
+   `document.getElementById('log-<id>')` を探しているので、返信を閉じた状態で描画すると
+   検索結果から返信に飛べなくなる。目当てのログが返信ならそのスレッドは開いて描画すること
+3. `.claude/launch.json`（dev server起動用）が未追跡のまま。コミットするか `.gitignore` に入れるか未決
+
+**チャット風UI・吹き出し・アイコンライブラリの導入はやらない。** Antigravityから提案があったが、
+このプロジェクトはTailwind不使用・絵文字アイコンで確定済みで、提案はその経緯を踏まえていなかった。
+デザインの作り込みはM4「デザインを精査する」まで意図的に保留している（機能が固まるとレイアウトが
+変わるため）。次のセッションで同種の提案が来ても、まずこのCLAUDE.mdと関連Issueを読んでから判断する。
 
 ### 動作を確認済みのもの
 - 行レベルセキュリティ（未ログイン・未参加のどちらでも何も返らない。3アカウントで確認）
@@ -110,7 +122,8 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - ログイン状態が再読み込みをまたいで保たれる
 
 ### まだ一度も動いていないもの
-- `protect_unit_deletion()` — 回の削除を作成者に限定（ゴミ箱のIssueで検証）
+- `protect_unit_deletion()` の**拒否側**。作成者が回をゴミ箱に入れて完全削除する経路は
+  2026-08-13に通った。作成者でない人が拒否されることはまだ確認していない（別アカウントが要る）
 
 ### 共有で踏んだ落とし穴（同じ形に注意）
 - **行レベルセキュリティは「見てよいもの」を決めるだけで「欲しいもの」は決めない。**
@@ -119,6 +132,19 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - **`insert().select()` は AFTER トリガーより先に評価される。** 教材の作成でこれに当たり、
   `create_book()` 関数を経由する形にした
 - **profiles を広く開けすぎていた。** 担当者名を出すためだったが、全利用者の名前が見える状態だった
+- **`shelf_status` の読み書きも同じ形。** `getMyShelfEntry` / `updateShelfStatus` で `user_id` を
+  忘れると、他人のステータスを自分のものとして表示・上書きする。1人で試している間は出ない
+- **結合先で絞るときは `!inner` が要る。** `countBookLogs` で `units!inner (book_id)` と
+  書かないと `units` 側の条件が効かず、教材をまたいで数える
+
+### ブラウザで検証するときの注意（2026-08-13に踏んだもの）
+- **自動操作のブラウザでは `window.confirm` が自動的にキャンセル扱いになる。** 削除が
+  「押しても何も起きない」ように見える。`window.confirm = () => true` に差し替えてから押す
+- **HMRが500エラーで壊れたタブは、以後の変更が反映されない。** タブを押しても何も起きず、
+  実装のバグに見える。新しいタブを開けば正常だった。コンソールの確認だけでなく、
+  動作確認そのものを新しいタブでやる方が安全
+- **フォームを変更した直後にページ遷移すると、保存が飛ぶことがある。** #41 の検証で
+  `shelf_status` を戻したつもりが戻っていなかった。変更後は再読み込みして値を確かめる
 
 ## デプロイ
 
@@ -137,6 +163,9 @@ URLを直接開いたときにVercelがファイルを探して404を返し、**
 
 - `pwtest@example.com` — パスワード再設定機能の検証用。既に削除確認済み
 - `verify-delete-me@example.com` / `perm-check-2@example.com` — 回のページ範囲・削除機能の検証用（作成者／非作成者の権限確認に使った）
+
+2026-08-13の作業（#38 / #41 / #42）では新しいアカウントを作っていない。本人の `ひろゆき` で
+検証し、作った教材と回はすべて完全削除済み。`線形代数` の `shelf_status` は「学習中」に戻してある。
 
 ### メール確認は意図的に無効にしている
 検証のために切ったが、そのままにしている。有効にすると、サインアップ時にメールのリンクを
