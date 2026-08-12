@@ -24,6 +24,33 @@ export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = {
   done: '完了',
 }
 
+/** 選択肢として出す順番。進み具合の順に並べてある */
+export const UNIT_STATUSES: UnitStatus[] = [
+  'not_started',
+  'in_progress',
+  'done',
+]
+
+export type UnitProgress = {
+  done: number
+  total: number
+  /** 0〜100 の整数。回が無いときは 0 */
+  percent: number
+}
+
+/**
+ * 完了した回の割合を数える。
+ *
+ * データ取得を伴わない純粋な関数にしてあるので、後からテストを書ける
+ * （進捗率の計算は docs/issues.md でテスト対象に挙げている項目）。
+ */
+export function countProgress(units: Unit[]): UnitProgress {
+  const total = units.length
+  const done = units.filter((unit) => unit.status === 'done').length
+  const percent = total === 0 ? 0 : Math.round((done / total) * 100)
+  return { done, total, percent }
+}
+
 function toUnit(row: UnitRow): Unit {
   return {
     id: row.id,
@@ -147,6 +174,24 @@ export async function updateUnitPageRange(
   const { error } = await supabase
     .from('units')
     .update({ page_from: pageFrom, page_to: pageTo })
+    .eq('id', unitId)
+
+  if (error) throw error
+}
+
+/**
+ * 回のステータスを変える。
+ *
+ * 権限は「編集者なら誰でも」。輪講中に気づいた人がその場で更新できるほうが
+ * 実態に合うため、担当者や作成者に限っていない（docs/features.md の UNIT-4）。
+ */
+export async function updateUnitStatus(
+  unitId: string,
+  status: UnitStatus,
+): Promise<void> {
+  const { error } = await supabase
+    .from('units')
+    .update({ status })
     .eq('id', unitId)
 
   if (error) throw error

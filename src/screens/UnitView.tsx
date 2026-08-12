@@ -6,8 +6,11 @@ import { listBookMembers, type BookMember } from '../repository/members'
 import {
   getUnit,
   updateUnitPageRange,
+  updateUnitStatus,
   UNIT_STATUS_LABEL,
+  UNIT_STATUSES,
   type Unit,
+  type UnitStatus,
 } from '../repository/units'
 import {
   buildThreads,
@@ -50,6 +53,9 @@ export default function UnitView() {
   const [replyBody, setReplyBody] = useState('')
   const [replyBusy, setReplyBusy] = useState(false)
   const [replyError, setReplyError] = useState<string | null>(null)
+
+  const [statusBusy, setStatusBusy] = useState(false)
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   /** 検索結果から飛んできたときに指定される、目当てのログ */
   const focusLogId = searchParams.get('log')
@@ -139,6 +145,24 @@ export default function UnitView() {
     }
   }
 
+  async function changeStatus(status: UnitStatus) {
+    if (!unit) return
+    setStatusError(null)
+    setStatusBusy(true)
+    try {
+      await updateUnitStatus(unit.id, status)
+      setState((prev) =>
+        prev.status === 'ok' && prev.unit
+          ? { ...prev, unit: { ...prev.unit, status } }
+          : prev,
+      )
+    } catch (caught: unknown) {
+      setStatusError(errorMessage(caught))
+    } finally {
+      setStatusBusy(false)
+    }
+  }
+
   function openReply(logId: string) {
     setReplyingTo(logId)
     setReplyBody('')
@@ -208,9 +232,34 @@ export default function UnitView() {
 
           <p className="screen-param">
             担当: {nameOf(unit.presenterId)} ・{' '}
-            {unit.scheduledDate ?? '日程未定'} ・{' '}
-            {UNIT_STATUS_LABEL[unit.status]}
+            {unit.scheduledDate ?? '日程未定'}
           </p>
+
+          <section className="panel">
+            <h2 className="panel-title">この回の進み具合</h2>
+            <div className="status-choice">
+              {UNIT_STATUSES.map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  className={
+                    unit.status === status
+                      ? 'status-button selected'
+                      : 'status-button'
+                  }
+                  aria-pressed={unit.status === status}
+                  onClick={() => changeStatus(status)}
+                  disabled={statusBusy}
+                >
+                  {UNIT_STATUS_LABEL[status]}
+                </button>
+              ))}
+            </div>
+            <p className="panel-note">
+              参加者なら誰でも変更できます。輪講中に気づいた人がその場で直せるようにしています。
+            </p>
+            {statusError && <p className="screen-error">{statusError}</p>}
+          </section>
 
           <section className="panel">
             <h2 className="panel-title">進んだページ</h2>
