@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
-import { getBook, type Book } from '../repository/books'
+import { getBook, trashBook, type Book } from '../repository/books'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
   getInviteToken,
@@ -22,9 +22,11 @@ type LoadState =
 
 export default function BookSummaryView() {
   const { bookId } = useParams()
+  const navigate = useNavigate()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [issuing, setIssuing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -70,6 +72,24 @@ export default function BookSummaryView() {
       setActionError(errorMessage(caught))
     } finally {
       setIssuing(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!bookId || !book) return
+    const confirmed = window.confirm(
+      `「${book.title}」を本棚から消しますか？\n共有している相手には残ります。ゴミ箱から復元できます。`,
+    )
+    if (!confirmed) return
+
+    setActionError(null)
+    setDeleting(true)
+    try {
+      await trashBook(bookId)
+      navigate('/')
+    } catch (caught: unknown) {
+      setActionError(errorMessage(caught))
+      setDeleting(false)
     }
   }
 
@@ -157,8 +177,24 @@ export default function BookSummaryView() {
                 </button>
               </>
             )}
-            {actionError && <p className="screen-error">{actionError}</p>}
           </section>
+
+          <section className="panel">
+            <h2 className="panel-title">この教材を消す</h2>
+            <p className="panel-note">
+              自分の本棚から消えます。共有している相手には残ります。ゴミ箱から復元できます。
+            </p>
+            <button
+              type="button"
+              className="danger-button"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? '処理中…' : '本棚から消す'}
+            </button>
+          </section>
+
+          {actionError && <p className="screen-error">{actionError}</p>}
         </>
       )}
     </ScreenFrame>

@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import { useSession } from '../auth/SessionContext'
 import { getBook, type Book } from '../repository/books'
 import { listBookMembers, type BookMember } from '../repository/members'
-import { listUnits, UNIT_STATUS_LABEL, type Unit } from '../repository/units'
+import {
+  listUnits,
+  trashUnit,
+  UNIT_STATUS_LABEL,
+  type Unit,
+} from '../repository/units'
 import { errorMessage } from '../lib/errorMessage'
 import { formatUnitPageRange } from '../lib/pageRange'
 
@@ -14,7 +20,10 @@ type LoadState =
 
 export default function SeminarView() {
   const { bookId } = useParams()
+  const { session } = useSession()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!bookId) return
@@ -49,6 +58,28 @@ export default function SeminarView() {
     return state.members.find((m) => m.userId === userId)?.displayName ?? '不明'
   }
 
+  async function handleDelete(unit: Unit) {
+    const confirmed = window.confirm(
+      `第${unit.order}回「${unit.title}」をゴミ箱に入れますか？\nゴミ箱から復元できます。`,
+    )
+    if (!confirmed) return
+
+    setDeleteError(null)
+    setDeletingId(unit.id)
+    try {
+      await trashUnit(unit.id)
+      setState((prev) =>
+        prev.status === 'ok'
+          ? { ...prev, units: prev.units.filter((u) => u.id !== unit.id) }
+          : prev,
+      )
+    } catch (caught: unknown) {
+      setDeleteError(errorMessage(caught))
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <ScreenFrame
       title={
@@ -72,6 +103,8 @@ export default function SeminarView() {
         <p className="screen-error">{state.message}</p>
       )}
 
+      {deleteError && <p className="screen-error">{deleteError}</p>}
+
       {state.status === 'ok' && (
         <>
           {state.units.length === 0 ? (
@@ -80,35 +113,52 @@ export default function SeminarView() {
             </p>
           ) : (
             <ul className="unit-list">
-              {state.units.map((unit) => (
-                <li key={unit.id}>
-                  <Link
-                    className="unit-row"
-                    to={`/books/${bookId}/units/${unit.id}`}
-                  >
-                    <span className="unit-order">第{unit.order}回</span>
-                    <span className="unit-main">
-                      <span className="unit-title">{unit.title}</span>
-                      <span className="unit-meta">
-                        {nameOf(unit.presenterId)} ・{' '}
-                        {unit.scheduledDate ?? '日程未定'}
-                        {formatUnitPageRange(unit.pageFrom, unit.pageTo) && (
-                          <>
-                            {' '}
-                            ・{' '}
-                            <span className="unit-pages">
-                              {formatUnitPageRange(unit.pageFrom, unit.pageTo)}
-                            </span>
-                          </>
-                        )}
+              {state.units.map((unit) => {
+                const canDelete = unit.createdBy === session?.user.id
+                return (
+                  <li key={unit.id} className="unit-row-container">
+                    <Link
+                      className="unit-row"
+                      to={`/books/${bookId}/units/${unit.id}`}
+                    >
+                      <span className="unit-order">第{unit.order}回</span>
+                      <span className="unit-main">
+                        <span className="unit-title">{unit.title}</span>
+                        <span className="unit-meta">
+                          {nameOf(unit.presenterId)} ・{' '}
+                          {unit.scheduledDate ?? '日程未定'}
+                          {formatUnitPageRange(unit.pageFrom, unit.pageTo) && (
+                            <>
+                              {' '}
+                              ・{' '}
+                              <span className="unit-pages">
+                                {formatUnitPageRange(
+                                  unit.pageFrom,
+                                  unit.pageTo,
+                                )}
+                              </span>
+                            </>
+                          )}
+                        </span>
                       </span>
-                    </span>
-                    <span className={`pill status-${unit.status}`}>
-                      {UNIT_STATUS_LABEL[unit.status]}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                      <span className={`pill status-${unit.status}`}>
+                        {UNIT_STATUS_LABEL[unit.status]}
+                      </span>
+                    </Link>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className="row-delete-button"
+                        aria-label={`第${unit.order}回を削除`}
+                        onClick={() => handleDelete(unit)}
+                        disabled={deletingId === unit.id}
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </>

@@ -117,3 +117,91 @@ export async function createBook(input: NewBook): Promise<string> {
   if (error) throw error
   return data
 }
+
+/**
+ * 教材を自分の本棚から消す（ゴミ箱へ）。
+ *
+ * 自分の参加情報の deleted_at を立てるだけで、教材本体や他の参加者には
+ * 触れない。共有している教材を消しても、他のメンバーの本棚には残る。
+ */
+export async function trashBook(bookId: string): Promise<void> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { error } = await supabase
+    .from('memberships')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+
+  if (error) throw error
+}
+
+export async function restoreBook(bookId: string): Promise<void> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { error } = await supabase
+    .from('memberships')
+    .update({ deleted_at: null })
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+
+  if (error) throw error
+}
+
+/**
+ * ゴミ箱から完全に削除する。
+ *
+ * 自分の参加情報の行そのものを消す。他に参加者がいなければ
+ * delete_orphan_book トリガーが教材と配下のデータをまとめて消す。
+ * 誰か残っていれば、その人たちには影響しない。
+ */
+export async function permanentlyDeleteBook(bookId: string): Promise<void> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { error } = await supabase
+    .from('memberships')
+    .delete()
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+
+  if (error) throw error
+}
+
+export type TrashedBook = {
+  id: string
+  title: string
+  deletedAt: string
+}
+
+/** 自分がゴミ箱に入れた教材を返す */
+export async function listTrashedBooks(): Promise<TrashedBook[]> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { data, error } = await supabase
+    .from('memberships')
+    .select('deleted_at, books (id, title)')
+    .eq('user_id', userId)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data ?? []).flatMap((row) => {
+    if (!row.books || !row.deleted_at) return []
+    return [
+      { id: row.books.id, title: row.books.title, deletedAt: row.deleted_at },
+    ]
+  })
+}
