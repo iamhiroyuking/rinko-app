@@ -88,7 +88,18 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - [x] 未ログインではどの画面も見えない（#4）
 - [x] **M1「輪講で実際に使える」（8/20期限、8/11に到達）**
       #10 教材 / #11 回 / #12 ログ / #13 タグ / #14 招待リンク / #15 検索 / #21 導線
-- [ ] 次: M2「議論を深める」（9/05目標）— タグのサジェスト、返信・スレッド、回のステータスと進捗バー、教材の概要の充実、自分のログの編集・削除、ロジックのテスト
+- [x] ページ範囲のバグ修正・回のページ範囲・削除機能（#32, #31, #33）
+- [ ] **次はこの順で着手する（この通りに1件ずつブランチ→PR→マージ）**
+      1. [#39](https://github.com/iamhiroyuking/rinko-app/issues/39) ログの返信・スレッド（`logs.parent_log_id` は実装済み・未使用。**見た目の刷新はしない**、今のレイアウトの延長で機能だけ作る）
+      2. [#40](https://github.com/iamhiroyuking/rinko-app/issues/40) 回のステータス変更・進捗バー（`Unit.status` は実装済み、UIが無いだけ）
+      3. [#38](https://github.com/iamhiroyuking/rinko-app/issues/38) 回に自由記述の開始箇所メモを追加（`page_from`/`page_to`と両立させる方針で確定済み。詳細はIssue本文）
+      4. [#41](https://github.com/iamhiroyuking/rinko-app/issues/41) BookSummaryViewの拡張（`shelf_status`/`joined_at`は実装済み、集計クエリを足すだけ）
+      5. [#42](https://github.com/iamhiroyuking/rinko-app/issues/42) HomeViewのフィルタ（`listShelfBooks`は引数を受け取れる設計済み）
+
+      **チャット風UI・吹き出し・アイコンライブラリの導入はやらない。** Antigravityから提案があったが、
+      このプロジェクトはTailwind不使用・絵文字アイコンで確定済みで、提案はその経緯を踏まえていなかった。
+      デザインの作り込みはM4「デザインを精査する」まで意図的に保留している（機能が固まるとレイアウトが
+      変わるため）。次のセッションで同種の提案が来ても、まずこのCLAUDE.mdと関連Issueを読んでから判断する。
 
 ### 動作を確認済みのもの
 - 行レベルセキュリティ（未ログイン・未参加のどちらでも何も返らない。3アカウントで確認）
