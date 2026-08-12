@@ -16,6 +16,7 @@ export default function CreateUnitView() {
   const [scheduledDate, setScheduledDate] = useState('')
   const [pageFrom, setPageFrom] = useState('')
   const [pageTo, setPageTo] = useState('')
+  const [startNote, setStartNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -60,6 +61,7 @@ export default function CreateUnitView() {
         scheduledDate: scheduledDate || null,
         pageFrom: from,
         pageTo: to,
+        startNote: startNote.trim() || null,
       })
       navigate(`/books/${bookId}/units/${unitId}`)
     } catch (caught: unknown) {
@@ -149,8 +151,19 @@ export default function CreateUnitView() {
             />
           </div>
         </div>
+
+        <div className="field">
+          <label htmlFor="startNote">開始箇所のメモ（任意）</label>
+          <input
+            id="startNote"
+            value={startNote}
+            onChange={(e) => setStartNote(e.target.value)}
+            placeholder="例: p.27の章末2.3から"
+          />
+        </div>
         <p className="panel-note">
           今分かる分だけで構いません。開始ページだけ書いて、この回が終わってから終了ページを追記できます。
+          章や演習番号で伝えたいときはメモに書いてください。
         </p>
 
         {error && <p className="screen-error">{error}</p>}

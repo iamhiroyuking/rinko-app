@@ -386,6 +386,7 @@ export type Database = {
           page_to: number | null
           presenter_id: string | null
           scheduled_date: string | null
+          start_note: string | null
           status: string
           title: string
         }
@@ -401,6 +402,7 @@ export type Database = {
           page_to?: number | null
           presenter_id?: string | null
           scheduled_date?: string | null
+          start_note?: string | null
           status?: string
           title: string
         }
@@ -416,6 +418,7 @@ export type Database = {
           page_to?: number | null
           presenter_id?: string | null
           scheduled_date?: string | null
+          start_note?: string | null
           status?: string
           title?: string
         }
