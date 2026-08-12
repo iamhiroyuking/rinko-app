@@ -4,12 +4,23 @@ import type { Database } from './database.types'
 type BookRow = Database['public']['Tables']['books']['Row']
 type MembershipRow = Database['public']['Tables']['memberships']['Row']
 
+export type ShelfStatus = MembershipRow['shelf_status']
+
+export const SHELF_STATUS_LABEL: Record<ShelfStatus, string> = {
+  planned: '学習予定',
+  reading: '学習中',
+  finished: '学習完了',
+}
+
+/** 選択肢として出す順番。読む前・読んでいる間・読み終えた後の順 */
+export const SHELF_STATUSES: ShelfStatus[] = ['planned', 'reading', 'finished']
+
 /** 本棚に並べる1冊。教材の情報と、自分の参加情報を合わせたもの */
 export type ShelfBook = {
   id: BookRow['id']
   title: BookRow['title']
   coverImageUrl: BookRow['cover_image_url']
-  shelfStatus: MembershipRow['shelf_status']
+  shelfStatus: ShelfStatus
   displayOrder: MembershipRow['display_order']
   /** 自分を含む参加者の人数。2人以上なら共有されている */
   memberCount: number
@@ -26,7 +37,7 @@ export type ShelfBook = {
  * ゴミ箱に入れたもの（deleted_at が入っているもの）は除く。
  */
 export async function listShelfBooks(
-  shelfStatus: MembershipRow['shelf_status'] = 'reading',
+  shelfStatus: ShelfStatus = 'reading',
 ): Promise<ShelfBook[]> {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
@@ -60,6 +71,67 @@ export async function listShelfBooks(
       },
     ]
   })
+}
+
+/** その教材に対する「自分の」参加情報。共有相手のものは含めない */
+export type MyShelfEntry = {
+  shelfStatus: ShelfStatus
+  /** この教材に参加した日時。学習開始日として表示する */
+  joinedAt: string
+}
+
+/**
+ * 自分の参加情報を取り出す。
+ *
+ * `user_id` で絞るのを忘れないこと。参加者名を表示するために
+ * 「同じ教材の参加者全員」を読める設定にしてあるので、絞らないと
+ * 共有相手の行まで返ってきて、他人のステータスを自分のものとして
+ * 表示してしまう（listShelfBooks と同じ落とし穴）。
+ */
+export async function getMyShelfEntry(
+  bookId: string,
+): Promise<MyShelfEntry | null> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { data, error } = await supabase
+    .from('memberships')
+    .select('shelf_status, joined_at')
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  return { shelfStatus: data.shelf_status, joinedAt: data.joined_at }
+}
+
+/**
+ * 本棚のステータスを変える。
+ *
+ * 自分の参加情報だけを書き換えるので、共有相手の本棚は変わらない。
+ * 自分が読み終えても、まだ読んでいる人の「学習中」はそのまま残る。
+ */
+export async function updateShelfStatus(
+  bookId: string,
+  shelfStatus: ShelfStatus,
+): Promise<void> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { error } = await supabase
+    .from('memberships')
+    .update({ shelf_status: shelfStatus })
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+
+  if (error) throw error
 }
 
 export type Book = {

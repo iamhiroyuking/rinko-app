@@ -131,6 +131,28 @@ export async function listLogs(unitId: string): Promise<LogEntry[]> {
   return (data ?? []).map(toLogEntry)
 }
 
+/**
+ * その教材に残されたログの総数を数える。返信も1件として数える。
+ *
+ * 本文は要らないので `head: true` で件数だけ受け取る。
+ * `units!inner` は「回と結合できた行だけ」の意味で、これが無いと
+ * units の条件が効かず教材をまたいで数えてしまう。
+ * ゴミ箱に入れた回のログは、画面から消えている以上ここでも数えない。
+ */
+export async function countBookLogs(bookId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('logs')
+    .select('id, units!inner (book_id, deleted_at)', {
+      count: 'exact',
+      head: true,
+    })
+    .eq('units.book_id', bookId)
+    .is('units.deleted_at', null)
+
+  if (error) throw error
+  return count ?? 0
+}
+
 export type NewLog = {
   unitId: string
   type: LogType

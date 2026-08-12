@@ -240,6 +240,35 @@ body {
   color: var(--muted);
 }
 
+.next-unit-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* 学習開始日と記録の数。項目が増えても縦に積むだけで済むようにしている */
+.stat-list {
+  align-self: stretch;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.stat dt {
+  color: var(--muted);
+}
+
+.stat dd {
+  margin: 0;
+}
+
 .member-list {
   list-style: none;
   margin: 0;

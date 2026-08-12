@@ -53,6 +53,19 @@ export function countProgress(units: Unit[]): UnitProgress {
   return { done, total, percent }
 }
 
+/**
+ * 次にやる回を選ぶ。第N回の順で最初の「完了していない回」。
+ *
+ * 進行中の回があればそれを返す。輪講は前から順に進むので、
+ * 日付ではなく並び順で決めている。日付が入っていない回や、
+ * 予定より遅れている回でも同じように扱えるため。
+ *
+ * countProgress と同じくデータ取得を伴わない純粋な関数にしてある。
+ */
+export function findNextUnit(units: Unit[]): Unit | null {
+  return units.find((unit) => unit.status !== 'done') ?? null
+}
+
 function toUnit(row: UnitRow): Unit {
   return {
     id: row.id,
