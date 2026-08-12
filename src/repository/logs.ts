@@ -70,9 +70,55 @@ export function formatPageRange(
   return `p.${pageStart ?? pageEnd}`
 }
 
+/** 親のログと、それに付いた返信をまとめたもの */
+export type LogThread = {
+  root: LogEntry
+  replies: LogEntry[]
+}
+
 /**
- * その回のログを新しい順に返す。
- * 返信のスレッド表示は別のIssueで扱うため、ここでは全件を平らに返す。
+ * 平らなログの配列をスレッドの形に組み直す。
+ *
+ * 並び順は docs/screen-flow.md の仕様どおり。
+ * 親は新しい順（最新の話題が上）、返信はその中で古い順（会話の流れを追える）。
+ *
+ * 問い合わせを親と返信で分けず、1回で取ってからここで組み立てている。
+ * 親ごとに返信を取りに行くと件数分だけ通信が増えるため。
+ *
+ * データの取得を伴わない純粋な関数にしてあるので、後からテストを書ける。
+ */
+export function buildThreads(logs: LogEntry[]): LogThread[] {
+  const repliesByParent = new Map<string, LogEntry[]>()
+  const roots: LogEntry[] = []
+
+  const ids = new Set(logs.map((log) => log.id))
+
+  for (const log of logs) {
+    // 親が見当たらない返信は、行き場がなくなるので親として扱う。
+    // 削除は連鎖するので通常は起こらないが、消えて見えなくなるより
+    // 場所がずれても表示されるほうがましなため。
+    if (log.parentLogId === null || !ids.has(log.parentLogId)) {
+      roots.push(log)
+      continue
+    }
+    const siblings = repliesByParent.get(log.parentLogId) ?? []
+    siblings.push(log)
+    repliesByParent.set(log.parentLogId, siblings)
+  }
+
+  roots.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+
+  return roots.map((root) => ({
+    root,
+    replies: (repliesByParent.get(root.id) ?? []).sort((a, b) =>
+      a.createdAt.localeCompare(b.createdAt),
+    ),
+  }))
+}
+
+/**
+ * その回のログを新しい順に返す。返信も含めて平らに返す。
+ * スレッドの形に組み直すのは buildThreads の役目。
  */
 export async function listLogs(unitId: string): Promise<LogEntry[]> {
   const { data, error } = await supabase
@@ -93,6 +139,8 @@ export type NewLog = {
   pageStart?: number | null
   pageEnd?: number | null
   tagNames?: string[]
+  /** 返信のときだけ、返信先のログのidを入れる */
+  parentLogId?: string | null
 }
 
 /**
@@ -124,6 +172,7 @@ export async function createLog(input: NewLog): Promise<string> {
       body: input.body,
       page_start: input.pageStart ?? null,
       page_end: input.pageEnd ?? null,
+      parent_log_id: input.parentLogId ?? null,
     })
     .select('id')
     .single()

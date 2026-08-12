@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import LogCard from '../components/LogCard'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
   getUnit,
@@ -9,9 +10,9 @@ import {
   type Unit,
 } from '../repository/units'
 import {
-  formatPageRange,
+  buildThreads,
+  createLog,
   listLogs,
-  LOG_TYPE_LABEL,
   type LogEntry,
 } from '../repository/logs'
 import { errorMessage } from '../lib/errorMessage'
@@ -31,16 +32,8 @@ type LoadState =
     }
   | { status: 'error'; message: string }
 
-/** 2026-08-11T03:51:34.267275+00:00 → 08/11 12:51 */
-function formatTimestamp(iso: string): string {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return ''
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const mi = String(date.getMinutes()).padStart(2, '0')
-  return `${mm}/${dd} ${hh}:${mi}`
-}
+/** 読み込み前に使い回す空配列。その場で作ると useMemo が毎描画でやり直しになる */
+const NO_LOGS: LogEntry[] = []
 
 export default function UnitView() {
   const { bookId, unitId } = useParams()
@@ -51,6 +44,12 @@ export default function UnitView() {
   const [pageToInput, setPageToInput] = useState('')
   const [pagesBusy, setPagesBusy] = useState(false)
   const [pagesError, setPagesError] = useState<string | null>(null)
+
+  /** 返信フォームを開いているログのid。null なら閉じている */
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyBody, setReplyBody] = useState('')
+  const [replyBusy, setReplyBusy] = useState(false)
+  const [replyError, setReplyError] = useState<string | null>(null)
 
   /** 検索結果から飛んできたときに指定される、目当てのログ */
   const focusLogId = searchParams.get('log')
@@ -94,6 +93,9 @@ export default function UnitView() {
 
   const unit = state.status === 'ok' ? state.unit : null
   const members = state.status === 'ok' ? state.members : []
+  const logs = state.status === 'ok' ? state.logs : NO_LOGS
+
+  const threads = useMemo(() => buildThreads(logs), [logs])
 
   const nameOf = (userId: string | null) => {
     if (!userId) return '未割当'
@@ -137,10 +139,42 @@ export default function UnitView() {
     }
   }
 
+  function openReply(logId: string) {
+    setReplyingTo(logId)
+    setReplyBody('')
+    setReplyError(null)
+  }
+
+  async function submitReply(event: React.FormEvent, parentLogId: string) {
+    event.preventDefault()
+    if (!unitId) return
+
+    const body = replyBody.trim()
+    if (body === '') return
+
+    setReplyError(null)
+    setReplyBusy(true)
+    try {
+      // 返信は本文だけ。種別・ページ・タグは会話の返しには要らないので
+      // フォームを増やさず、必要なら通常の投稿を使ってもらう
+      await createLog({ unitId, type: 'none', body, parentLogId })
+      const refreshed = await listLogs(unitId)
+      setState((prev) =>
+        prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
+      )
+      setReplyingTo(null)
+      setReplyBody('')
+    } catch (caught: unknown) {
+      setReplyError(errorMessage(caught))
+    } finally {
+      setReplyBusy(false)
+    }
+  }
+
   return (
     <ScreenFrame
       title={unit ? `第${unit.order}回　${unit.title}` : '回ごとの記録'}
-      description="新しい記録が上に並びます。"
+      description="新しい記録が上に並びます。返信は記録の下に古い順で並びます。"
       backTo={`/books/${bookId}/units`}
       primaryAction={
         unit
@@ -245,48 +279,85 @@ export default function UnitView() {
             )}
           </section>
 
-          {state.logs.length === 0 ? (
+          {threads.length === 0 ? (
             <p className="empty-state">
               まだ記録がありません。「発言する」から残してください。
             </p>
           ) : (
             <ul className="log-list">
-              {state.logs.map((log) => {
-                const pages = formatPageRange(log.pageStart, log.pageEnd)
-                return (
-                  <li
-                    key={log.id}
-                    id={`log-${log.id}`}
-                    className={
-                      log.id === focusLogId ? 'log-card focused' : 'log-card'
+              {threads.map((thread) => (
+                <li key={thread.root.id}>
+                  <LogCard
+                    log={thread.root}
+                    authorName={nameOf(thread.root.authorId)}
+                    isFocused={thread.root.id === focusLogId}
+                    footer={
+                      replyingTo === thread.root.id ? (
+                        <form
+                          className="reply-form"
+                          onSubmit={(e) => submitReply(e, thread.root.id)}
+                        >
+                          <label
+                            className="reply-label"
+                            htmlFor={`reply-${thread.root.id}`}
+                          >
+                            返信
+                          </label>
+                          <textarea
+                            id={`reply-${thread.root.id}`}
+                            value={replyBody}
+                            onChange={(e) => setReplyBody(e.target.value)}
+                            rows={3}
+                            required
+                            autoFocus
+                          />
+                          {replyError && (
+                            <p className="screen-error">{replyError}</p>
+                          )}
+                          <div className="button-row">
+                            <button
+                              type="button"
+                              className="quiet-button"
+                              onClick={() => setReplyingTo(null)}
+                            >
+                              キャンセル
+                            </button>
+                            <button
+                              type="submit"
+                              className="secondary-button"
+                              disabled={replyBusy}
+                            >
+                              {replyBusy ? '送信中…' : '返信する'}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          className="quiet-button reply-open-button"
+                          onClick={() => openReply(thread.root.id)}
+                        >
+                          返信する
+                        </button>
+                      )
                     }
-                  >
-                    <div className="log-head">
-                      <span className="log-author">{nameOf(log.authorId)}</span>
-                      {log.type !== 'none' && (
-                        <span className="log-type">
-                          {LOG_TYPE_LABEL[log.type]}
-                        </span>
-                      )}
-                      {pages && <span className="log-page">{pages}</span>}
-                      <span className="log-time">
-                        {formatTimestamp(log.createdAt)}
-                      </span>
-                    </div>
-                    {log.title && <p className="log-title">{log.title}</p>}
-                    <p className="log-body">{log.body}</p>
-                    {log.tagNames.length > 0 && (
-                      <div className="tag-row">
-                        {log.tagNames.map((name) => (
-                          <span key={name} className="tag-chip">
-                            #{name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
+                  />
+
+                  {thread.replies.length > 0 && (
+                    <ul className="reply-list">
+                      {thread.replies.map((reply) => (
+                        <li key={reply.id}>
+                          <LogCard
+                            log={reply}
+                            authorName={nameOf(reply.authorId)}
+                            isFocused={reply.id === focusLogId}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
             </ul>
           )}
         </>
