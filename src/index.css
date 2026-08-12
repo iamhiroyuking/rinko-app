@@ -494,6 +494,16 @@ mark {
   color: var(--muted);
 }
 
+.unit-pages {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .pill {
   flex-shrink: 0;
   font-size: 0.6875rem;

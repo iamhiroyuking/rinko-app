@@ -5,6 +5,7 @@ import { getBook, type Book } from '../repository/books'
 import { listBookMembers, type BookMember } from '../repository/members'
 import { listUnits, UNIT_STATUS_LABEL, type Unit } from '../repository/units'
 import { errorMessage } from '../lib/errorMessage'
+import { formatUnitPageRange } from '../lib/pageRange'
 
 type LoadState =
   | { status: 'loading' }
@@ -91,6 +92,15 @@ export default function SeminarView() {
                       <span className="unit-meta">
                         {nameOf(unit.presenterId)} ・{' '}
                         {unit.scheduledDate ?? '日程未定'}
+                        {formatUnitPageRange(unit.pageFrom, unit.pageTo) && (
+                          <>
+                            {' '}
+                            ・{' '}
+                            <span className="unit-pages">
+                              {formatUnitPageRange(unit.pageFrom, unit.pageTo)}
+                            </span>
+                          </>
+                        )}
                       </span>
                     </span>
                     <span className={`pill status-${unit.status}`}>
