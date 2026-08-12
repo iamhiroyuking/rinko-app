@@ -9,14 +9,7 @@ import {
 } from '../repository/logs'
 import { parseTagNames } from '../repository/tags'
 import { errorMessage } from '../lib/errorMessage'
-
-/** 空欄なら null、数字なら数値にする。数字でなければ null 扱い */
-function toPageNumber(value: string): number | null {
-  const trimmed = value.trim()
-  if (trimmed === '') return null
-  const parsed = Number(trimmed)
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
-}
+import { toPageNumber, validatePageRange } from '../lib/pageRange'
 
 export default function AddLogView() {
   const { bookId, unitId } = useParams()
@@ -36,6 +29,15 @@ export default function AddLogView() {
     event.preventDefault()
     if (!unitId || !bookId) return
     setError(null)
+
+    const start = toPageNumber(pageStart)
+    const end = toPageNumber(pageEnd)
+    const validationError = validatePageRange(start, end)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setBusy(true)
     try {
       await createLog({
@@ -43,8 +45,8 @@ export default function AddLogView() {
         type,
         title: title.trim() || null,
         body: body.trim(),
-        pageStart: toPageNumber(pageStart),
-        pageEnd: toPageNumber(pageEnd),
+        pageStart: start,
+        pageEnd: end,
         tagNames,
       })
       navigate(`/books/${bookId}/units/${unitId}`)
