@@ -5,6 +5,7 @@ import { useSession } from '../auth/SessionContext'
 import { getBook, type Book } from '../repository/books'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
+  countProgress,
   listUnits,
   trashUnit,
   UNIT_STATUS_LABEL,
@@ -17,6 +18,34 @@ type LoadState =
   | { status: 'loading' }
   | { status: 'ok'; book: Book | null; units: Unit[]; members: BookMember[] }
   | { status: 'error'; message: string }
+
+function ProgressBar({ units }: { units: Unit[] }) {
+  const progress = countProgress(units)
+
+  return (
+    <div className="progress">
+      <div className="progress-head">
+        <span className="progress-label">進み具合</span>
+        <span className="progress-count">
+          {progress.done} / {progress.total} 回 完了
+        </span>
+      </div>
+      <div
+        className="progress-track"
+        role="progressbar"
+        aria-valuenow={progress.percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="完了した回の割合"
+      >
+        <div
+          className="progress-fill"
+          style={{ width: `${progress.percent}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 export default function SeminarView() {
   const { bookId } = useParams()
@@ -104,6 +133,10 @@ export default function SeminarView() {
       )}
 
       {deleteError && <p className="screen-error">{deleteError}</p>}
+
+      {state.status === 'ok' && state.units.length > 0 && (
+        <ProgressBar units={state.units} />
+      )}
 
       {state.status === 'ok' && (
         <>
