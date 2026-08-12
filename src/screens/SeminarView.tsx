@@ -148,6 +148,7 @@ export default function SeminarView() {
             <ul className="unit-list">
               {state.units.map((unit) => {
                 const canDelete = unit.createdBy === session?.user.id
+                const pageText = formatUnitPageRange(unit.pageFrom, unit.pageTo)
                 return (
                   <li key={unit.id} className="unit-row-container">
                     <Link
@@ -160,18 +161,14 @@ export default function SeminarView() {
                         <span className="unit-meta">
                           {nameOf(unit.presenterId)} ・{' '}
                           {unit.scheduledDate ?? '日程未定'}
-                          {formatUnitPageRange(unit.pageFrom, unit.pageTo) && (
+                          {pageText && (
                             <>
                               {' '}
-                              ・{' '}
-                              <span className="unit-pages">
-                                {formatUnitPageRange(
-                                  unit.pageFrom,
-                                  unit.pageTo,
-                                )}
-                              </span>
+                              ・ <span className="unit-pages">{pageText}</span>
                             </>
                           )}
+                          {/* 自由記述は日本語の文なので、数値の範囲と違って等幅にしない */}
+                          {unit.startNote && <> ・ {unit.startNote}</>}
                         </span>
                       </span>
                       <span className={`pill status-${unit.status}`}>

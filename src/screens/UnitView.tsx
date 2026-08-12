@@ -5,7 +5,7 @@ import LogCard from '../components/LogCard'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
   getUnit,
-  updateUnitPageRange,
+  updateUnitPages,
   updateUnitStatus,
   UNIT_STATUS_LABEL,
   UNIT_STATUSES,
@@ -45,6 +45,7 @@ export default function UnitView() {
   const [editingPages, setEditingPages] = useState(false)
   const [pageFromInput, setPageFromInput] = useState('')
   const [pageToInput, setPageToInput] = useState('')
+  const [startNoteInput, setStartNoteInput] = useState('')
   const [pagesBusy, setPagesBusy] = useState(false)
   const [pagesError, setPagesError] = useState<string | null>(null)
 
@@ -103,6 +104,10 @@ export default function UnitView() {
 
   const threads = useMemo(() => buildThreads(logs), [logs])
 
+  const pageRangeText = unit
+    ? formatUnitPageRange(unit.pageFrom, unit.pageTo)
+    : null
+
   const nameOf = (userId: string | null) => {
     if (!userId) return '未割当'
     return members.find((m) => m.userId === userId)?.displayName ?? '不明'
@@ -112,6 +117,7 @@ export default function UnitView() {
     if (!unit) return
     setPageFromInput(unit.pageFrom !== null ? String(unit.pageFrom) : '')
     setPageToInput(unit.pageTo !== null ? String(unit.pageTo) : '')
+    setStartNoteInput(unit.startNote ?? '')
     setPagesError(null)
     setEditingPages(true)
   }
@@ -128,13 +134,18 @@ export default function UnitView() {
       return
     }
 
+    const startNote = startNoteInput.trim() || null
+
     setPagesError(null)
     setPagesBusy(true)
     try {
-      await updateUnitPageRange(unit.id, from, to)
+      await updateUnitPages(unit.id, { pageFrom: from, pageTo: to, startNote })
       setState((prev) =>
         prev.status === 'ok' && prev.unit
-          ? { ...prev, unit: { ...prev.unit, pageFrom: from, pageTo: to } }
+          ? {
+              ...prev,
+              unit: { ...prev.unit, pageFrom: from, pageTo: to, startNote },
+            }
           : prev,
       )
       setEditingPages(false)
@@ -292,6 +303,16 @@ export default function UnitView() {
                   </div>
                 </div>
 
+                <div className="field">
+                  <label htmlFor="startNoteInput">開始箇所のメモ</label>
+                  <input
+                    id="startNoteInput"
+                    value={startNoteInput}
+                    onChange={(e) => setStartNoteInput(e.target.value)}
+                    placeholder="例: p.27の章末2.3から"
+                  />
+                </div>
+
                 {pagesError && <p className="screen-error">{pagesError}</p>}
 
                 <div className="button-row">
@@ -313,10 +334,18 @@ export default function UnitView() {
               </form>
             ) : (
               <>
-                <p className="panel-note">
-                  {formatUnitPageRange(unit.pageFrom, unit.pageTo) ??
-                    'まだ記録がありません。'}
-                </p>
+                {pageRangeText === null && unit.startNote === null ? (
+                  <p className="panel-note">まだ記録がありません。</p>
+                ) : (
+                  <>
+                    {pageRangeText && (
+                      <p className="panel-note">{pageRangeText}</p>
+                    )}
+                    {unit.startNote && (
+                      <p className="panel-note">開始箇所: {unit.startNote}</p>
+                    )}
+                  </>
+                )}
                 <button
                   type="button"
                   className="secondary-button"

@@ -16,6 +16,8 @@ export type Unit = {
   createdBy: string
   pageFrom: number | null
   pageTo: number | null
+  /** 「p.27の章末2.3から」のような、人が読むための開始箇所。数値のページ範囲とは別枠 */
+  startNote: string | null
 }
 
 export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = {
@@ -63,6 +65,7 @@ function toUnit(row: UnitRow): Unit {
     createdBy: row.created_by,
     pageFrom: row.page_from,
     pageTo: row.page_to,
+    startNote: row.start_note,
   }
 }
 
@@ -102,6 +105,7 @@ export type NewUnit = {
   scheduledDate?: string | null
   pageFrom?: number | null
   pageTo?: number | null
+  startNote?: string | null
 }
 
 /**
@@ -151,6 +155,7 @@ export async function createUnit(input: NewUnit): Promise<string> {
       created_by: userId,
       page_from: input.pageFrom ?? null,
       page_to: input.pageTo ?? null,
+      start_note: input.startNote ?? null,
     })
     .select('id')
     .single()
@@ -159,21 +164,33 @@ export async function createUnit(input: NewUnit): Promise<string> {
   return data.id
 }
 
+export type UnitPages = {
+  pageFrom: number | null
+  pageTo: number | null
+  startNote: string | null
+}
+
 /**
- * 進んだページ範囲だけを更新する。
+ * 進んだページの情報だけを更新する。
  *
  * 回を開始する前に開始ページだけ埋めておき、終わったら終了ページを
  * 追記する、という2段階の入力を想定しているので、他の項目とは
  * 分けて更新できるようにしている。
+ *
+ * 数値2つと自由記述はUnitViewの同じパネルで一緒に編集するので、
+ * 別々の関数には分けず1回の更新にまとめている。
  */
-export async function updateUnitPageRange(
+export async function updateUnitPages(
   unitId: string,
-  pageFrom: number | null,
-  pageTo: number | null,
+  pages: UnitPages,
 ): Promise<void> {
   const { error } = await supabase
     .from('units')
-    .update({ page_from: pageFrom, page_to: pageTo })
+    .update({
+      page_from: pages.pageFrom,
+      page_to: pages.pageTo,
+      start_note: pages.startNote,
+    })
     .eq('id', unitId)
 
   if (error) throw error
