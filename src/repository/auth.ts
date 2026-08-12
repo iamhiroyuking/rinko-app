@@ -46,6 +46,30 @@ export async function getSession(): Promise<Session | null> {
 }
 
 /**
+ * パスワード再設定のメールを送る。
+ *
+ * メールのリンクを開くと、URLに一時的な鍵が付いた状態で redirectTo に飛ぶ。
+ * Supabaseのクライアントがそれを読み取って自動でログイン状態を作るので、
+ * 飛んだ先の画面では updatePassword() をそのまま呼べる。
+ *
+ * 登録されていないメールアドレスでもエラーにならない。これは仕様で、
+ * 「そのアドレスが登録済みかどうか」を外部に知らせないためである。
+ * 画面側でも、送れたかどうかに関わらず同じ文言を出す。
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
+  if (error) throw error
+}
+
+/** ログイン中（再設定リンクから来た状態を含む）のパスワードを変える */
+export async function updatePassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw error
+}
+
+/**
  * ログイン状態が変わったときに呼ばれる。
  * 戻り値の関数を呼ぶと購読をやめる。
  */

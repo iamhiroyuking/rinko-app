@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { useSession } from '../auth/SessionContext'
 import { signIn, signUp } from '../repository/auth'
@@ -124,6 +124,14 @@ export default function LoginView() {
               : 'ログイン'}
         </button>
       </form>
+
+      {mode === 'login' && (
+        <ul className="link-list">
+          <li>
+            <Link to="/forgot-password">パスワードを忘れた場合</Link>
+          </li>
+        </ul>
+      )}
     </ScreenFrame>
   )
 }
