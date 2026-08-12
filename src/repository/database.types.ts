@@ -460,6 +460,7 @@ export type Database = {
         }
         Returns: string
       }
+      has_any_membership: { Args: { target_book_id: string }; Returns: boolean }
       is_member: { Args: { target_book_id: string }; Returns: boolean }
       join_book_with_token: { Args: { invite_token: string }; Returns: string }
       shares_book_with: { Args: { target_user_id: string }; Returns: boolean }

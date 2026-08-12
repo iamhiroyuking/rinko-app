@@ -288,6 +288,53 @@ body {
   cursor: default;
 }
 
+.danger-button {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--danger);
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--danger);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.danger-button:hover {
+  background: var(--danger-bg);
+}
+
+.danger-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.trash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trash-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+}
+
+.trash-row-title {
+  font-size: 0.9375rem;
+  color: var(--fg);
+}
+
 .foot-note {
   font-size: 0.75rem;
   color: var(--muted);
@@ -454,7 +501,15 @@ mark {
   gap: 0.5rem;
 }
 
+.unit-row-container {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
 .unit-row {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -467,6 +522,28 @@ mark {
 
 .unit-row:hover {
   border-color: var(--accent);
+}
+
+.row-delete-button {
+  flex-shrink: 0;
+  width: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.row-delete-button:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.row-delete-button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .unit-order {

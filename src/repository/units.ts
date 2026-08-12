@@ -151,3 +151,79 @@ export async function updateUnitPageRange(
 
   if (error) throw error
 }
+
+/**
+ * 回をゴミ箱に入れる／復元する。
+ *
+ * データベース側のトリガー（protect_unit_deletion）が作成者以外の
+ * deleted_at 変更を拒否するので、ここで権限を判定する必要はない。
+ * 作成者でない人が押せないよう、ボタン自体は画面側で隠す。
+ */
+export async function trashUnit(unitId: string): Promise<void> {
+  const { error } = await supabase
+    .from('units')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', unitId)
+
+  if (error) throw error
+}
+
+export async function restoreUnit(unitId: string): Promise<void> {
+  const { error } = await supabase
+    .from('units')
+    .update({ deleted_at: null })
+    .eq('id', unitId)
+
+  if (error) throw error
+}
+
+/** ゴミ箱から完全に削除する。ログなど配下のデータも連鎖して消える */
+export async function permanentlyDeleteUnit(unitId: string): Promise<void> {
+  const { error } = await supabase.from('units').delete().eq('id', unitId)
+  if (error) throw error
+}
+
+export type TrashedUnit = {
+  id: string
+  bookId: string
+  bookTitle: string
+  order: number
+  title: string
+  deletedAt: string
+}
+
+/**
+ * 自分が作って削除した回を返す。
+ *
+ * 他人が作った回は、自分の画面から消えていてもここには出ない
+ * （復元できるのは作成者だけのため）。
+ */
+export async function listMyTrashedUnits(): Promise<TrashedUnit[]> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { data, error } = await supabase
+    .from('units')
+    .select('id, book_id, order, title, deleted_at, books (title)')
+    .eq('created_by', userId)
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data ?? []).flatMap((row) => {
+    if (!row.books || !row.deleted_at) return []
+    return [
+      {
+        id: row.id,
+        bookId: row.book_id,
+        bookTitle: row.books.title,
+        order: row.order,
+        title: row.title,
+        deletedAt: row.deleted_at,
+      },
+    ]
+  })
+}
