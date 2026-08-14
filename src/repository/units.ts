@@ -184,6 +184,42 @@ export type UnitPages = {
   startNote: string | null
 }
 
+export type UnitEdit = {
+  /** 第N回の番号。重複してもよい（一意制約は付けていない） */
+  order: number
+  title: string
+  objective: string | null
+  presenterId: string | null
+  scheduledDate: string | null
+}
+
+/**
+ * 回の内容を書き換える。
+ *
+ * 権限は編集者。作成者に限っていないのは「追加と編集は参加者全員に同期し、
+ * 削除だけは作った本人しかできない」という既存の原則に合わせているため。
+ *
+ * 教材（book_id）は変えない。ここで渡していないうえ、変えようとしても
+ * データベース側のトリガー（protect_unit_book）が拒否する。
+ */
+export async function updateUnit(
+  unitId: string,
+  input: UnitEdit,
+): Promise<void> {
+  const { error } = await supabase
+    .from('units')
+    .update({
+      order: input.order,
+      title: input.title,
+      objective: input.objective,
+      presenter_id: input.presenterId,
+      scheduled_date: input.scheduledDate,
+    })
+    .eq('id', unitId)
+
+  if (error) throw error
+}
+
 /**
  * 進んだページの情報だけを更新する。
  *
