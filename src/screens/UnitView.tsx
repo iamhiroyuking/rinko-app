@@ -58,6 +58,17 @@ export default function UnitView() {
   const [statusBusy, setStatusBusy] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
 
+  /**
+   * 返信を閉じているスレッドの、親のログのid。
+   *
+   * 「閉じている方」を覚えるので、初期状態（空）はすべて開いた状態になる。
+   * 開いている方を覚えると、新しく読み込んだスレッドが閉じて出てしまう。
+   * 個人の見え方なのでデータベースには保存しない。
+   */
+  const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(
+    () => new Set(),
+  )
+
   /** 検索結果から飛んできたときに指定される、目当てのログ */
   const focusLogId = searchParams.get('log')
 
@@ -174,6 +185,15 @@ export default function UnitView() {
     }
   }
 
+  function toggleThread(rootLogId: string) {
+    setCollapsedThreads((prev) => {
+      const next = new Set(prev)
+      if (next.has(rootLogId)) next.delete(rootLogId)
+      else next.add(rootLogId)
+      return next
+    })
+  }
+
   function openReply(logId: string) {
     setReplyingTo(logId)
     setReplyBody('')
@@ -197,6 +217,14 @@ export default function UnitView() {
       setState((prev) =>
         prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
       )
+      // 閉じているスレッドに返信すると、書いたものが見えないまま終わる。
+      // 送ったら開く
+      setCollapsedThreads((prev) => {
+        if (!prev.has(parentLogId)) return prev
+        const next = new Set(prev)
+        next.delete(parentLogId)
+        return next
+      })
       setReplyingTo(null)
       setReplyBody('')
     } catch (caught: unknown) {
@@ -363,79 +391,108 @@ export default function UnitView() {
             </p>
           ) : (
             <ul className="log-list">
-              {threads.map((thread) => (
-                <li key={thread.root.id}>
-                  <LogCard
-                    log={thread.root}
-                    authorName={nameOf(thread.root.authorId)}
-                    isFocused={thread.root.id === focusLogId}
-                    footer={
-                      replyingTo === thread.root.id ? (
-                        <form
-                          className="reply-form"
-                          onSubmit={(e) => submitReply(e, thread.root.id)}
-                        >
-                          <label
-                            className="reply-label"
-                            htmlFor={`reply-${thread.root.id}`}
+              {threads.map((thread) => {
+                // 目当てのログが返信なら、閉じていても開いて描画する。
+                // 閉じたままだと要素が無く、検索結果からそのログへ飛べない
+                const hasFocusedReply = thread.replies.some(
+                  (reply) => reply.id === focusLogId,
+                )
+                const repliesOpen =
+                  !collapsedThreads.has(thread.root.id) || hasFocusedReply
+
+                return (
+                  <li key={thread.root.id}>
+                    <LogCard
+                      log={thread.root}
+                      authorName={nameOf(thread.root.authorId)}
+                      isFocused={thread.root.id === focusLogId}
+                      footer={
+                        replyingTo === thread.root.id ? (
+                          <form
+                            className="reply-form"
+                            onSubmit={(e) => submitReply(e, thread.root.id)}
                           >
-                            返信
-                          </label>
-                          <textarea
-                            id={`reply-${thread.root.id}`}
-                            value={replyBody}
-                            onChange={(e) => setReplyBody(e.target.value)}
-                            rows={3}
-                            required
-                            autoFocus
-                          />
-                          {replyError && (
-                            <p className="screen-error">{replyError}</p>
-                          )}
-                          <div className="button-row">
-                            <button
-                              type="button"
-                              className="quiet-button"
-                              onClick={() => setReplyingTo(null)}
+                            <label
+                              className="reply-label"
+                              htmlFor={`reply-${thread.root.id}`}
                             >
-                              キャンセル
-                            </button>
-                            <button
-                              type="submit"
-                              className="secondary-button"
-                              disabled={replyBusy}
-                            >
-                              {replyBusy ? '送信中…' : '返信する'}
-                            </button>
-                          </div>
-                        </form>
-                      ) : (
+                              返信
+                            </label>
+                            <textarea
+                              id={`reply-${thread.root.id}`}
+                              value={replyBody}
+                              onChange={(e) => setReplyBody(e.target.value)}
+                              rows={3}
+                              required
+                              autoFocus
+                            />
+                            {replyError && (
+                              <p className="screen-error">{replyError}</p>
+                            )}
+                            <div className="button-row">
+                              <button
+                                type="button"
+                                className="quiet-button"
+                                onClick={() => setReplyingTo(null)}
+                              >
+                                キャンセル
+                              </button>
+                              <button
+                                type="submit"
+                                className="secondary-button"
+                                disabled={replyBusy}
+                              >
+                                {replyBusy ? '送信中…' : '返信する'}
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <button
+                            type="button"
+                            className="quiet-button reply-open-button"
+                            onClick={() => openReply(thread.root.id)}
+                          >
+                            返信する
+                          </button>
+                        )
+                      }
+                    />
+
+                    {thread.replies.length > 0 && (
+                      <>
                         <button
                           type="button"
-                          className="quiet-button reply-open-button"
-                          onClick={() => openReply(thread.root.id)}
+                          className="quiet-button reply-toggle-button"
+                          aria-expanded={repliesOpen}
+                          aria-controls={`replies-${thread.root.id}`}
+                          onClick={() => toggleThread(thread.root.id)}
                         >
-                          返信する
+                          {repliesOpen
+                            ? `返信${thread.replies.length}件を隠す`
+                            : `返信${thread.replies.length}件を表示`}
                         </button>
-                      )
-                    }
-                  />
 
-                  {thread.replies.length > 0 && (
-                    <ul className="reply-list">
-                      {thread.replies.map((reply) => (
-                        <li key={reply.id}>
-                          <LogCard
-                            log={reply}
-                            authorName={nameOf(reply.authorId)}
-                            isFocused={reply.id === focusLogId}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
+                        {repliesOpen && (
+                          <ul
+                            className="reply-list"
+                            id={`replies-${thread.root.id}`}
+                          >
+                            {thread.replies.map((reply) => (
+                              <li key={reply.id}>
+                                <LogCard
+                                  log={reply}
+                                  authorName={nameOf(reply.authorId)}
+                                  isFocused={reply.id === focusLogId}
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </>
