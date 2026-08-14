@@ -2,14 +2,26 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { listBookMembers, type BookMember } from '../repository/members'
-import { createUnit } from '../repository/units'
+import { createUnit, getUnit, updateUnit } from '../repository/units'
 import { errorMessage } from '../lib/errorMessage'
 import { toPageNumber, validatePageRange } from '../lib/pageRange'
 
+/**
+ * 回の作成と編集。
+ *
+ * URLに unitId があれば編集、無ければ新規。AddLogView と同じ考え方で、
+ * 中身が同じフォームを2つ持たないようにしている。
+ *
+ * 進んだページ（page_from / page_to / start_note）は編集では扱わない。
+ * UnitViewの「進んだページ」パネルが受け持っていて、輪講の前後で
+ * 何度も触る項目なので、そちらに置いたままにする。
+ */
 export default function CreateUnitView() {
-  const { bookId } = useParams()
+  const { bookId, unitId } = useParams()
+  const isEditing = Boolean(unitId)
   const navigate = useNavigate()
   const [members, setMembers] = useState<BookMember[]>([])
+  const [order, setOrder] = useState('')
   const [title, setTitle] = useState('')
   const [objective, setObjective] = useState('')
   const [presenterId, setPresenterId] = useState('')
@@ -19,6 +31,7 @@ export default function CreateUnitView() {
   const [startNote, setStartNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(isEditing)
 
   useEffect(() => {
     if (!bookId) return
@@ -38,10 +51,65 @@ export default function CreateUnitView() {
     }
   }, [bookId])
 
+  useEffect(() => {
+    if (!unitId) return
+    let cancelled = false
+
+    getUnit(unitId)
+      .then((unit) => {
+        if (cancelled) return
+        if (!unit) {
+          setError('この回は見つかりませんでした。')
+          setLoading(false)
+          return
+        }
+        setOrder(String(unit.order))
+        setTitle(unit.title)
+        setObjective(unit.objective ?? '')
+        setPresenterId(unit.presenterId ?? '')
+        setScheduledDate(unit.scheduledDate ?? '')
+        setLoading(false)
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return
+        setError(errorMessage(caught))
+        setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [unitId])
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (!bookId) return
     setError(null)
+
+    if (unitId) {
+      const orderNumber = toPageNumber(order)
+      if (orderNumber === null || orderNumber < 1) {
+        setError('第N回の番号は1以上の数字にしてください。')
+        return
+      }
+
+      setBusy(true)
+      try {
+        await updateUnit(unitId, {
+          order: orderNumber,
+          title: title.trim(),
+          objective: objective.trim() || null,
+          presenterId: presenterId || null,
+          scheduledDate: scheduledDate || null,
+        })
+        navigate(`/books/${bookId}/units/${unitId}`)
+      } catch (caught: unknown) {
+        setError(errorMessage(caught))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
 
     const from = toPageNumber(pageFrom)
     const to = toPageNumber(pageTo)
@@ -73,11 +141,33 @@ export default function CreateUnitView() {
 
   return (
     <ScreenFrame
-      title="回を作成"
-      description="第N回の番号は自動で振られます。後から編集できます。"
-      backTo={`/books/${bookId}/units`}
+      title={isEditing ? '回を編集' : '回を作成'}
+      description={
+        isEditing
+          ? '第N回の番号も直せます。同じ番号が並んでも構いません。'
+          : '第N回の番号は自動で振られます。後から編集できます。'
+      }
+      backTo={
+        isEditing
+          ? `/books/${bookId}/units/${unitId}`
+          : `/books/${bookId}/units`
+      }
     >
-      <form className="form" onSubmit={handleSubmit}>
+      {loading && <p className="screen-param">読み込み中…</p>}
+
+      <form className="form" onSubmit={handleSubmit} hidden={loading}>
+        <div className="field" hidden={!isEditing}>
+          <label htmlFor="order">第N回</label>
+          <input
+            id="order"
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={order}
+            onChange={(e) => setOrder(e.target.value)}
+          />
+        </div>
+
         <div className="field">
           <label htmlFor="title">タイトル</label>
           <input
@@ -125,7 +215,8 @@ export default function CreateUnitView() {
           />
         </div>
 
-        <div className="field-row">
+        {/* 進んだページはUnitViewのパネルが受け持つ。作成時だけ先に書けるようにしている */}
+        <div className="field-row" hidden={isEditing}>
           <div className="field">
             <label htmlFor="pageFrom">進んだページ・開始（任意）</label>
             <input
@@ -152,7 +243,7 @@ export default function CreateUnitView() {
           </div>
         </div>
 
-        <div className="field">
+        <div className="field" hidden={isEditing}>
           <label htmlFor="startNote">開始箇所のメモ（任意）</label>
           <input
             id="startNote"
@@ -161,15 +252,18 @@ export default function CreateUnitView() {
             placeholder="例: p.27の章末2.3から"
           />
         </div>
-        <p className="panel-note">
+        <p className="panel-note" hidden={isEditing}>
           今分かる分だけで構いません。開始ページだけ書いて、この回が終わってから終了ページを追記できます。
           章や演習番号で伝えたいときはメモに書いてください。
+        </p>
+        <p className="panel-note" hidden={!isEditing}>
+          進んだページと開始箇所のメモは、回の画面の「進んだページ」から直せます。
         </p>
 
         {error && <p className="screen-error">{error}</p>}
 
         <button type="submit" className="primary-button" disabled={busy}>
-          {busy ? '作成中…' : '作成する'}
+          {busy ? '保存中…' : isEditing ? '保存する' : '作成する'}
         </button>
       </form>
     </ScreenFrame>

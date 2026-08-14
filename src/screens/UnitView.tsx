@@ -356,7 +356,13 @@ export default function UnitView() {
 
           <p className="screen-param">
             担当: {nameOf(unit.presenterId)} ・{' '}
-            {unit.scheduledDate ?? '日程未定'}
+            {unit.scheduledDate ?? '日程未定'} ・{' '}
+            <Link
+              className="log-action-link"
+              to={`/books/${bookId}/units/${unitId}/edit`}
+            >
+              この回を編集
+            </Link>
           </p>
 
           <section className="panel">

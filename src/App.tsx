@@ -46,6 +46,11 @@ export default function App() {
               element={<CreateUnitView />}
             />
             <Route path="/books/:bookId/units/:unitId" element={<UnitView />} />
+            {/* 作成と同じ画面。unitId があるかどうかで新規と編集を分けている */}
+            <Route
+              path="/books/:bookId/units/:unitId/edit"
+              element={<CreateUnitView />}
+            />
             <Route
               path="/books/:bookId/units/:unitId/logs/new"
               element={<AddLogView />}
