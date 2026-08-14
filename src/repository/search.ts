@@ -14,11 +14,14 @@ export type SearchableLog = {
   body: string
   tagNames: string[]
   createdAt: string
+  /** 添付画像の枚数。結果に印を出すために数だけ持つ（中身は要らない） */
+  attachmentCount: number
 }
 
 type Row = LogRow & {
   units: { id: string; order: number; title: string } | null
   log_tags?: { tags: { name: string } | null }[] | null
+  attachments?: { id: string }[] | null
 }
 
 /**
@@ -41,7 +44,7 @@ export async function listSearchableLogs(
   const { data, error } = await supabase
     .from('logs')
     .select(
-      '*, units!inner (id, order, title, book_id), log_tags ( tags ( name ) )',
+      '*, units!inner (id, order, title, book_id), log_tags ( tags ( name ) ), attachments ( id )',
     )
     .eq('units.book_id', bookId)
     // ゴミ箱に入れた回のログを除く。行レベルセキュリティは削除済みの回も
@@ -67,6 +70,7 @@ export async function listSearchableLogs(
           link.tags ? [link.tags.name] : [],
         ),
         createdAt: row.created_at,
+        attachmentCount: (row.attachments ?? []).length,
       },
     ]
   })

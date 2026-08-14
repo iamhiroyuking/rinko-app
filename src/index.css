@@ -243,6 +243,12 @@ body {
 .next-unit-title {
   margin: 0;
   font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.next-unit-title:hover {
+  text-decoration: underline;
 }
 
 /* 学習開始日と記録の数。項目が増えても縦に積むだけで済むようにしている */
@@ -418,13 +424,35 @@ body {
   color: var(--muted);
 }
 
-/* 投稿前に選んだファイルの一覧 */
-.attachment-name-list {
+/* 投稿前に選んだ画像。名前だけだと選び間違いに気づけないので絵で出す */
+.preview-list {
   list-style: none;
-  margin: 0.3rem 0 0;
+  margin: 0.4rem 0 0;
   padding: 0;
-  font-size: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 7rem;
+}
+
+.preview-image {
+  width: 7rem;
+  height: 5rem;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+}
+
+.preview-name {
+  font-size: 0.6875rem;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .tag-row {

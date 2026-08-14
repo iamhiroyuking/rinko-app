@@ -49,6 +49,24 @@ export default function AddLogView() {
   /** 何枚目まで送れたか。送り直すときに、済んだ分を飛ばす */
   const [uploadedCount, setUploadedCount] = useState(0)
 
+  /**
+   * 選んだ画像を出すための一時的なURL。
+   *
+   * ファイル名だけだと、違う写真を選んでも投稿するまで気づけない。
+   * 使い終わったら手放す必要があるので、選び直しと画面を離れるときに
+   * 取り消している。
+   */
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+
+  useEffect(() => {
+    const urls = images.map((file) => URL.createObjectURL(file))
+    setPreviewUrls(urls)
+
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url)
+    }
+  }, [images])
+
   const tagNames = parseTagNames(tagInput)
 
   useEffect(() => {
@@ -268,9 +286,16 @@ export default function AddLogView() {
             板書やノートの写真を貼れます。長辺1600pxまで縮小してから送るので、そのままの写真を選んで構いません。
           </p>
           {images.length > 0 && (
-            <ul className="attachment-name-list">
-              {images.map((file) => (
-                <li key={file.name}>{file.name}</li>
+            <ul className="preview-list">
+              {images.map((file, index) => (
+                <li key={file.name} className="preview-item">
+                  <img
+                    className="preview-image"
+                    src={previewUrls[index]}
+                    alt={file.name}
+                  />
+                  <span className="preview-name">{file.name}</span>
+                </li>
               ))}
             </ul>
           )}

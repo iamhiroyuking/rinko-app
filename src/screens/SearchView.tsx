@@ -156,6 +156,14 @@ export default function SearchView() {
                       <span className="result-context">
                         第{hit.unitOrder}回 {hit.unitTitle} ・{' '}
                         {nameOf(hit.authorId)}
+                        {/* 本文だけでは画像の有無が分からない。数だけ添える */}
+                        {hit.attachmentCount > 0 && (
+                          <>
+                            {' '}
+                            ・ <span aria-hidden>🖼</span> 画像
+                            {hit.attachmentCount}枚
+                          </>
+                        )}
                       </span>
                       {hit.title && (
                         <span className="log-title">

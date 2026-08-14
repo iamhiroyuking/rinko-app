@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import {
   getBook,
@@ -201,9 +201,14 @@ export default function BookSummaryView() {
             <h2 className="panel-title">次にやる回</h2>
             {nextUnit ? (
               <>
-                <p className="next-unit-title">
+                {/* 次にやる回が分かっても飛べないと意味がないので、
+                    タイトルそのものを入り口にしている */}
+                <Link
+                  className="next-unit-title"
+                  to={`/books/${bookId}/units/${nextUnit.id}`}
+                >
                   第{nextUnit.order}回　{nextUnit.title}
-                </p>
+                </Link>
                 <p className="panel-note">
                   {memberNameOf(nextUnit.presenterId)} ・{' '}
                   {nextUnit.scheduledDate ?? '日程未定'}
