@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import LogCard from '../components/LogCard'
+import { useSession } from '../auth/SessionContext'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
   getUnit,
@@ -15,6 +16,7 @@ import {
 import {
   buildThreads,
   createLog,
+  deleteLog,
   listLogs,
   type LogEntry,
 } from '../repository/logs'
@@ -41,6 +43,7 @@ const NO_LOGS: LogEntry[] = []
 
 export default function UnitView() {
   const { bookId, unitId } = useParams()
+  const { session } = useSession()
   const [searchParams] = useSearchParams()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [editingPages, setEditingPages] = useState(false)
@@ -58,6 +61,9 @@ export default function UnitView() {
 
   const [statusBusy, setStatusBusy] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
+
+  const [deletingLogId, setDeletingLogId] = useState<string | null>(null)
+  const [logError, setLogError] = useState<string | null>(null)
 
   /**
    * 返信を閉じているスレッドの、親のログのid。
@@ -210,6 +216,58 @@ export default function UnitView() {
     } finally {
       setStatusBusy(false)
     }
+  }
+
+  async function handleDeleteLog(log: LogEntry, replyCount: number) {
+    const confirmed = window.confirm(
+      replyCount > 0
+        ? `この記録を削除しますか？\n返信${replyCount}件も一緒に消えます。元に戻せません。`
+        : 'この記録を削除しますか？\n元に戻せません。',
+    )
+    if (!confirmed) return
+
+    setLogError(null)
+    setDeletingLogId(log.id)
+    try {
+      await deleteLog(log.id)
+      if (!unitId) return
+      const refreshed = await listLogs(unitId)
+      setState((prev) =>
+        prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
+      )
+    } catch (caught: unknown) {
+      setLogError(errorMessage(caught))
+    } finally {
+      setDeletingLogId(null)
+    }
+  }
+
+  /**
+   * 自分の記録にだけ出す操作。
+   *
+   * 他人の記録を消せてはいけない。押せないよう隠すが、
+   * データベース側も投稿者本人しか変更・削除できないようにしてある。
+   */
+  function ownLogActions(log: LogEntry, replyCount: number) {
+    if (log.authorId !== session?.user.id) return null
+    return (
+      <>
+        <Link
+          className="log-action-link"
+          to={`/books/${bookId}/units/${unitId}/logs/${log.id}/edit`}
+        >
+          編集
+        </Link>
+        <button
+          type="button"
+          className="quiet-button log-action-button"
+          onClick={() => handleDeleteLog(log, replyCount)}
+          disabled={deletingLogId === log.id}
+        >
+          {deletingLogId === log.id ? '削除中…' : '削除'}
+        </button>
+      </>
+    )
   }
 
   function toggleThread(rootLogId: string) {
@@ -412,6 +470,8 @@ export default function UnitView() {
             )}
           </section>
 
+          {logError && <p className="screen-error">{logError}</p>}
+
           {threads.length === 0 ? (
             <p className="empty-state">
               まだ記録がありません。「発言する」から残してください。
@@ -475,13 +535,16 @@ export default function UnitView() {
                             </div>
                           </form>
                         ) : (
-                          <button
-                            type="button"
-                            className="quiet-button reply-open-button"
-                            onClick={() => openReply(thread.root.id)}
-                          >
-                            返信する
-                          </button>
+                          <div className="log-actions">
+                            <button
+                              type="button"
+                              className="quiet-button log-action-button"
+                              onClick={() => openReply(thread.root.id)}
+                            >
+                              返信する
+                            </button>
+                            {ownLogActions(thread.root, thread.replies.length)}
+                          </div>
                         )
                       }
                     />
@@ -512,6 +575,11 @@ export default function UnitView() {
                                   authorName={nameOf(reply.authorId)}
                                   isFocused={reply.id === focusLogId}
                                   attachmentUrls={attachmentUrls}
+                                  footer={
+                                    <div className="log-actions">
+                                      {ownLogActions(reply, 0)}
+                                    </div>
+                                  }
                                 />
                               </li>
                             ))}

@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import type { Database } from './database.types'
 import { attachTagsToLog, ensureTags } from './tags'
-import type { Attachment } from './attachments'
+import { removeLogImages, type Attachment } from './attachments'
 
 type LogRow = Database['public']['Tables']['logs']['Row']
 
@@ -235,4 +235,98 @@ export async function createLog(input: NewLog): Promise<string> {
   }
 
   return data.id
+}
+
+export type LogEdit = {
+  type: LogType
+  title: string | null
+  body: string
+  pageStart: number | null
+  pageEnd: number | null
+  tagNames: string[]
+}
+
+/**
+ * 自分のログを書き換える。
+ *
+ * 他人のログは行レベルセキュリティが弾くので、ここで投稿者を確かめる
+ * 必要はない。押せないよう画面側でボタンを隠す。
+ *
+ * 添付画像には触れない。付け外しは別の操作にしている。
+ */
+export async function updateLog(logId: string, input: LogEdit): Promise<void> {
+  const { data, error } = await supabase
+    .from('logs')
+    .update({
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      page_start: input.pageStart,
+      page_end: input.pageEnd,
+    })
+    .eq('id', logId)
+    .select('unit_id')
+    .single()
+
+  if (error) throw error
+
+  await replaceLogTags(logId, data.unit_id, input.tagNames)
+}
+
+/**
+ * ログに付いているタグを、渡された名前の集合に合わせる。
+ *
+ * 差分を出さず、いったん全部外してから付け直している。1件のログに
+ * 付くタグは数個で、差分を計算する手間に見合わないため。
+ */
+async function replaceLogTags(
+  logId: string,
+  unitId: string,
+  names: string[],
+): Promise<void> {
+  const { error: detachError } = await supabase
+    .from('log_tags')
+    .delete()
+    .eq('log_id', logId)
+
+  if (detachError) throw detachError
+  if (names.length === 0) return
+
+  const { data: unit, error: unitError } = await supabase
+    .from('units')
+    .select('book_id')
+    .eq('id', unitId)
+    .single()
+
+  if (unitError) throw unitError
+
+  const tagIds = await ensureTags(unit.book_id, names)
+  await attachTagsToLog(logId, tagIds)
+}
+
+/**
+ * 自分のログを完全に削除する。返信も連鎖して消える。
+ *
+ * 添付画像はストレージにあり連鎖しないので、行を消す前に消す。
+ * 順番が逆だと、辿れないファイルが残る（#53で実際に踏んだ）。
+ */
+export async function deleteLog(logId: string): Promise<void> {
+  await removeLogImages(logId)
+
+  const { error } = await supabase.from('logs').delete().eq('id', logId)
+  if (error) throw error
+}
+
+/** 1件のログを取り出す。編集画面が今の値を出すために使う */
+export async function getLog(logId: string): Promise<LogEntry | null> {
+  const { data, error } = await supabase
+    .from('logs')
+    .select(
+      '*, log_tags ( tags ( name ) ), attachments ( id, storage_path, file_name, mime_type )',
+    )
+    .eq('id', logId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data ? toLogEntry(data) : null
 }

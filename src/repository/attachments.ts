@@ -68,6 +68,38 @@ export async function uploadLogImages(
 }
 
 /**
+ * そのログと、その返信に付いている画像を消す。ログを削除する前に呼ぶ。
+ *
+ * 返信の分も一緒に消すのは、ログを消すと返信も連鎖して消えるため
+ * （logs.parent_log_id の on delete cascade）。
+ */
+export async function removeLogImages(logId: string): Promise<void> {
+  const { data: replies, error: repliesError } = await supabase
+    .from('logs')
+    .select('id')
+    .eq('parent_log_id', logId)
+
+  if (repliesError) throw repliesError
+
+  const logIds = [logId, ...(replies ?? []).map((row) => row.id)]
+
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('storage_path')
+    .in('log_id', logIds)
+
+  if (error) throw error
+
+  const paths = (data ?? []).map((row) => row.storage_path)
+  if (paths.length === 0) return
+
+  const { error: removeError } = await supabase.storage
+    .from(BUCKET)
+    .remove(paths)
+  if (removeError) throw removeError
+}
+
+/**
  * その回に付いている画像を消す。回を完全に削除する前に呼ぶ。
  *
  * データベース側は外部キーの連鎖で消えるが、ストレージは連鎖しない。
