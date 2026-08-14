@@ -4,18 +4,35 @@ import ScreenFrame from '../components/ScreenFrame'
 import { useSession } from '../auth/SessionContext'
 import { signOut } from '../repository/auth'
 import { getMyProfile, type Profile } from '../repository/profiles'
-import { listShelfBooks, type ShelfBook } from '../repository/books'
+import {
+  listShelfBooks,
+  SHELF_STATUS_LABEL,
+  SHELF_STATUSES,
+  type ShelfBook,
+  type ShelfStatus,
+} from '../repository/books'
 import { errorMessage } from '../lib/errorMessage'
 
 type LoadState =
   | { status: 'loading' }
-  | { status: 'ok'; books: ShelfBook[]; profile: Profile | null }
+  | { status: 'ok'; books: ShelfBook[] }
   | { status: 'error'; message: string }
+
+/** 教材が1冊も無いときの案内。選んでいるステータスによって言うことが違う */
+const EMPTY_MESSAGE: Record<ShelfStatus, string> = {
+  planned: 'これから読む教材はまだありません。',
+  reading: 'まだ教材がありません。下の「教材を追加」から始めてください。',
+  finished: '読み終えた教材はまだありません。',
+}
 
 export default function HomeView() {
   const { session } = useSession()
   const navigate = useNavigate()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
+  /** undefined は「まだ取得していない」。null と分けないと、読み込み中に
+   *  「プロフィールが見つかりません」が一瞬出てしまう */
+  const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
+  const [shelfStatus, setShelfStatus] = useState<ShelfStatus>('reading')
 
   const userId = session?.user.id
 
@@ -23,19 +40,32 @@ export default function HomeView() {
     let cancelled = false
     setState({ status: 'loading' })
 
-    const load = async () => {
-      const books = await listShelfBooks()
-      const profile = userId ? await getMyProfile(userId) : null
-      return { books, profile }
-    }
-
-    load()
-      .then(({ books, profile }) => {
-        if (!cancelled) setState({ status: 'ok', books, profile })
+    listShelfBooks(shelfStatus)
+      .then((books) => {
+        if (!cancelled) setState({ status: 'ok', books })
       })
       .catch((caught: unknown) => {
         if (!cancelled)
           setState({ status: 'error', message: errorMessage(caught) })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, shelfStatus])
+
+  // プロフィールは切り替えても変わらないので、教材の取得とは分けている。
+  // 一緒にすると、タブを押すたびに同じ問い合わせを繰り返すことになる
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+
+    getMyProfile(userId)
+      .then((loaded) => {
+        if (!cancelled) setProfile(loaded)
+      })
+      .catch(() => {
+        // 表示名は画面の下の一行だけなので、取れなくても本棚は見せる
       })
 
     return () => {
@@ -48,12 +78,10 @@ export default function HomeView() {
     navigate('/login')
   }
 
-  const profile = state.status === 'ok' ? state.profile : null
-
   return (
     <ScreenFrame
       title="本棚"
-      description="学習中の教材が並びます。"
+      description={`${SHELF_STATUS_LABEL[shelfStatus]}の教材が並びます。`}
       headerAction={
         <button type="button" className="quiet-button" onClick={handleSignOut}>
           ログアウト
@@ -65,6 +93,26 @@ export default function HomeView() {
         profile ? `${profile.display_name} としてログイン中` : undefined
       }
     >
+      {/* 回のステータス選択と同じ見た目にしている。押すと本棚の中身が
+          入れ替わるだけで、教材そのものは変わらない */}
+      <div className="status-choice">
+        {SHELF_STATUSES.map((candidate) => (
+          <button
+            key={candidate}
+            type="button"
+            className={
+              shelfStatus === candidate
+                ? 'status-button selected'
+                : 'status-button'
+            }
+            aria-pressed={shelfStatus === candidate}
+            onClick={() => setShelfStatus(candidate)}
+          >
+            {SHELF_STATUS_LABEL[candidate]}
+          </button>
+        ))}
+      </div>
+
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
       )}
@@ -73,18 +121,16 @@ export default function HomeView() {
         <p className="screen-error">{state.message}</p>
       )}
 
+      {profile === null && (
+        <p className="screen-error">
+          プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）
+        </p>
+      )}
+
       {state.status === 'ok' && (
         <>
-          {!profile && (
-            <p className="screen-error">
-              プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）
-            </p>
-          )}
-
           {state.books.length === 0 ? (
-            <p className="empty-state">
-              まだ教材がありません。下の「教材を追加」から始めてください。
-            </p>
+            <p className="empty-state">{EMPTY_MESSAGE[shelfStatus]}</p>
           ) : (
             <ul className="shelf">
               {state.books.map((book) => (
