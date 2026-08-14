@@ -332,6 +332,7 @@ export default function UnitView() {
             }
           : undefined
       }
+      secondaryLinks={[{ label: '記録を検索', to: `/books/${bookId}/search` }]}
     >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
