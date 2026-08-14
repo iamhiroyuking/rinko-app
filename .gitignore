@@ -7,3 +7,7 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Claude Code のローカル設定（許可コマンドなど）。マシンごとに違うので共有しない。
+# 起動設定の .claude/launch.json は共有したいのでコミットしている。
+.claude/settings.local.json
