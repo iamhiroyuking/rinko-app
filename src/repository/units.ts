@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { removeUnitImages } from './attachments'
 import type { Database } from './database.types'
 
 type UnitRow = Database['public']['Tables']['units']['Row']
@@ -252,8 +253,15 @@ export async function restoreUnit(unitId: string): Promise<void> {
   if (error) throw error
 }
 
-/** ゴミ箱から完全に削除する。ログなど配下のデータも連鎖して消える */
+/**
+ * ゴミ箱から完全に削除する。ログなど配下のデータも連鎖して消える。
+ *
+ * 添付画像だけは連鎖しない（ストレージはデータベースの外にある）ので、
+ * 先に消す。順番が逆だと、参照する行が無くなったファイルが残る。
+ */
 export async function permanentlyDeleteUnit(unitId: string): Promise<void> {
+  await removeUnitImages(unitId)
+
   const { error } = await supabase.from('units').delete().eq('id', unitId)
   if (error) throw error
 }

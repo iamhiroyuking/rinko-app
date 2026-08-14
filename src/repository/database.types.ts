@@ -43,26 +43,26 @@ export type Database = {
         Row: {
           created_at: string
           file_name: string
-          file_url: string
           id: string
           log_id: string
           mime_type: string | null
+          storage_path: string
         }
         Insert: {
           created_at?: string
           file_name: string
-          file_url: string
           id?: string
           log_id: string
           mime_type?: string | null
+          storage_path: string
         }
         Update: {
           created_at?: string
           file_name?: string
-          file_url?: string
           id?: string
           log_id?: string
           mime_type?: string | null
+          storage_path?: string
         }
         Relationships: [
           {
@@ -454,7 +454,12 @@ export type Database = {
       book_id_of_log: { Args: { target_log_id: string }; Returns: string }
       book_id_of_tag: { Args: { target_tag_id: string }; Returns: string }
       book_id_of_unit: { Args: { target_unit_id: string }; Returns: string }
+      can_delete_storage_path: {
+        Args: { object_path: string }
+        Returns: boolean
+      }
       can_edit: { Args: { target_book_id: string }; Returns: boolean }
+      can_edit_storage_path: { Args: { object_path: string }; Returns: boolean }
       create_book: {
         Args: {
           book_cover_image_url?: string
@@ -465,6 +470,10 @@ export type Database = {
       }
       has_any_membership: { Args: { target_book_id: string }; Returns: boolean }
       is_member: { Args: { target_book_id: string }; Returns: boolean }
+      is_member_of_storage_path: {
+        Args: { object_path: string }
+        Returns: boolean
+      }
       join_book_with_token: { Args: { invite_token: string }; Returns: string }
       shares_book_with: { Args: { target_user_id: string }; Returns: boolean }
     }

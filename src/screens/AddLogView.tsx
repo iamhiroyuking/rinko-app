@@ -8,8 +8,10 @@ import {
   type LogType,
 } from '../repository/logs'
 import { parseTagNames } from '../repository/tags'
+import { uploadLogImages } from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
 import { toPageNumber, validatePageRange } from '../lib/pageRange'
+import { ACCEPTED_TYPES } from '../lib/image'
 
 export default function AddLogView() {
   const { bookId, unitId } = useParams()
@@ -20,7 +22,10 @@ export default function AddLogView() {
   const [pageStart, setPageStart] = useState('')
   const [pageEnd, setPageEnd] = useState('')
   const [tagInput, setTagInput] = useState('')
+  const [images, setImages] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
+  /** 投稿と画像の送信は分けて知らせる。画像は時間がかかるため */
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const tagNames = parseTagNames(tagInput)
@@ -40,7 +45,7 @@ export default function AddLogView() {
 
     setBusy(true)
     try {
-      await createLog({
+      const logId = await createLog({
         unitId,
         type,
         title: title.trim() || null,
@@ -49,11 +54,19 @@ export default function AddLogView() {
         pageEnd: end,
         tagNames,
       })
+
+      // 画像はログが出来てからでないと置き場所（パス）が決まらない
+      if (images.length > 0) {
+        setUploading(true)
+        await uploadLogImages(bookId, logId, images)
+      }
+
       navigate(`/books/${bookId}/units/${unitId}`)
     } catch (caught: unknown) {
       setError(errorMessage(caught))
     } finally {
       setBusy(false)
+      setUploading(false)
     }
   }
 
@@ -144,10 +157,31 @@ export default function AddLogView() {
           )}
         </div>
 
+        <div className="field">
+          <label htmlFor="images">画像（任意）</label>
+          <input
+            id="images"
+            type="file"
+            accept={ACCEPTED_TYPES.join(',')}
+            multiple
+            onChange={(e) => setImages(Array.from(e.target.files ?? []))}
+          />
+          <p className="panel-note">
+            板書やノートの写真を貼れます。長辺1600pxまで縮小してから送るので、そのままの写真を選んで構いません。
+          </p>
+          {images.length > 0 && (
+            <ul className="attachment-name-list">
+              {images.map((file) => (
+                <li key={file.name}>{file.name}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         {error && <p className="screen-error">{error}</p>}
 
         <button type="submit" className="primary-button" disabled={busy}>
-          {busy ? '投稿中…' : '投稿する'}
+          {uploading ? '画像を送信中…' : busy ? '投稿中…' : '投稿する'}
         </button>
       </form>
     </ScreenFrame>

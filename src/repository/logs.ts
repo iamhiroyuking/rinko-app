@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import type { Database } from './database.types'
 import { attachTagsToLog, ensureTags } from './tags'
+import type { Attachment } from './attachments'
 
 type LogRow = Database['public']['Tables']['logs']['Row']
 
@@ -27,14 +28,24 @@ export type LogEntry = {
   pageEnd: number | null
   createdAt: string
   tagNames: string[]
+  /** 添付画像。表示に使う期限付きURLは signAttachments で後から付ける */
+  attachments: Attachment[]
 }
 
 /**
- * 取得したログの行に、タグを結合した分が付いた形。
+ * 取得したログの行に、タグと添付を結合した分が付いた形。
  * 結合結果は無いこともあるので、受け取る側では常に無い場合を考える。
  */
 type LogRowWithTags = LogRow & {
   log_tags?: { tags: { name: string } | null }[] | null
+  attachments?:
+    | {
+        id: string
+        storage_path: string
+        file_name: string
+        mime_type: string | null
+      }[]
+    | null
 }
 
 function toLogEntry(row: LogRowWithTags): LogEntry {
@@ -51,6 +62,12 @@ function toLogEntry(row: LogRowWithTags): LogEntry {
     tagNames: (row.log_tags ?? []).flatMap((link) =>
       link.tags ? [link.tags.name] : [],
     ),
+    attachments: (row.attachments ?? []).map((file) => ({
+      id: file.id,
+      storagePath: file.storage_path,
+      fileName: file.file_name,
+      mimeType: file.mime_type,
+    })),
   }
 }
 
@@ -123,7 +140,9 @@ export function buildThreads(logs: LogEntry[]): LogThread[] {
 export async function listLogs(unitId: string): Promise<LogEntry[]> {
   const { data, error } = await supabase
     .from('logs')
-    .select('*, log_tags ( tags ( name ) )')
+    .select(
+      '*, log_tags ( tags ( name ) ), attachments ( id, storage_path, file_name, mime_type )',
+    )
     .eq('unit_id', unitId)
     .order('created_at', { ascending: false })
 
