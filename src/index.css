@@ -624,6 +624,40 @@ mark {
   flex-wrap: wrap;
 }
 
+/* 読み上げには残すが目には見せない。絵文字だけのボタンの説明に使う */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* しおり。時刻の右端に置く */
+.mark-button {
+  margin-left: auto;
+  padding: 0.1rem 0.3rem;
+  border: none;
+  border-radius: 0.35rem;
+  background: none;
+  font-size: 0.9375rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.mark-button:hover,
+.mark-button.marked {
+  opacity: 1;
+}
+
+.mark-button.marked {
+  background: var(--surface-2);
+}
+
 .log-author {
   font-size: 0.875rem;
   font-weight: 700;
