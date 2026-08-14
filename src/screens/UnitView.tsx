@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import LogCard from '../components/LogCard'
+import BodyForm from '../components/BodyForm'
 import { useSession } from '../auth/SessionContext'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
@@ -64,6 +65,11 @@ export default function UnitView() {
 
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null)
   const [logError, setLogError] = useState<string | null>(null)
+
+  /** 回の画面からその場で書く分。返信とは別に持つ（同時に開けるため） */
+  const [quickBody, setQuickBody] = useState('')
+  const [quickBusy, setQuickBusy] = useState(false)
+  const [quickError, setQuickError] = useState<string | null>(null)
 
   /**
    * 返信を閉じているスレッドの、親のログのid。
@@ -279,6 +285,35 @@ export default function UnitView() {
     })
   }
 
+  /**
+   * 回の画面からそのまま投稿する。
+   *
+   * 本文だけ。種別・ページ・タグ・画像を使いたいときは AddLogView へ。
+   * 画面を移らないので、読んでいた位置と流れを保ったまま書ける。
+   */
+  async function submitQuickPost(event: React.FormEvent) {
+    event.preventDefault()
+    if (!unitId) return
+
+    const body = quickBody.trim()
+    if (body === '') return
+
+    setQuickError(null)
+    setQuickBusy(true)
+    try {
+      await createLog({ unitId, type: 'none', body })
+      const refreshed = await listLogs(unitId)
+      setState((prev) =>
+        prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
+      )
+      setQuickBody('')
+    } catch (caught: unknown) {
+      setQuickError(errorMessage(caught))
+    } finally {
+      setQuickBusy(false)
+    }
+  }
+
   function openReply(logId: string) {
     setReplyingTo(logId)
     setReplyBody('')
@@ -477,11 +512,27 @@ export default function UnitView() {
             )}
           </section>
 
+          {/* 輪講中に浮かんだことをその場で書けるようにする。
+              画面を移ると読んでいた位置を失ううえ、戻る手間もかかる。
+              種別・ページ・タグ・画像を使いたいときは「発言する」へ */}
+          <BodyForm
+            label="いま書く"
+            fieldId="quick-post"
+            placeholder="疑問でも気づいたことでも"
+            submitLabel="投稿する"
+            busyLabel="投稿中…"
+            value={quickBody}
+            onChange={setQuickBody}
+            onSubmit={submitQuickPost}
+            busy={quickBusy}
+            error={quickError}
+          />
+
           {logError && <p className="screen-error">{logError}</p>}
 
           {threads.length === 0 ? (
             <p className="empty-state">
-              まだ記録がありません。「発言する」から残してください。
+              まだ記録がありません。上の「いま書く」から残せます。
             </p>
           ) : (
             <ul className="log-list">
@@ -503,44 +554,19 @@ export default function UnitView() {
                       attachmentUrls={attachmentUrls}
                       footer={
                         replyingTo === thread.root.id ? (
-                          <form
-                            className="reply-form"
+                          <BodyForm
+                            label="返信"
+                            fieldId={`reply-${thread.root.id}`}
+                            submitLabel="返信する"
+                            busyLabel="送信中…"
+                            value={replyBody}
+                            onChange={setReplyBody}
                             onSubmit={(e) => submitReply(e, thread.root.id)}
-                          >
-                            <label
-                              className="reply-label"
-                              htmlFor={`reply-${thread.root.id}`}
-                            >
-                              返信
-                            </label>
-                            <textarea
-                              id={`reply-${thread.root.id}`}
-                              value={replyBody}
-                              onChange={(e) => setReplyBody(e.target.value)}
-                              rows={3}
-                              required
-                              autoFocus
-                            />
-                            {replyError && (
-                              <p className="screen-error">{replyError}</p>
-                            )}
-                            <div className="button-row">
-                              <button
-                                type="button"
-                                className="quiet-button"
-                                onClick={() => setReplyingTo(null)}
-                              >
-                                キャンセル
-                              </button>
-                              <button
-                                type="submit"
-                                className="secondary-button"
-                                disabled={replyBusy}
-                              >
-                                {replyBusy ? '送信中…' : '返信する'}
-                              </button>
-                            </div>
-                          </form>
+                            busy={replyBusy}
+                            error={replyError}
+                            onCancel={() => setReplyingTo(null)}
+                            autoFocus
+                          />
                         ) : (
                           <div className="log-actions">
                             <button
