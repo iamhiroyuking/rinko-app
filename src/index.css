@@ -433,6 +433,14 @@ body {
   font-size: 0.8125rem;
 }
 
+/* 返信の開閉。返信リストと同じだけ左に寄せて、どの記録に付いているか分かるようにしている */
+.reply-toggle-button {
+  margin: 0.4rem 0 0 1.25rem;
+  padding: 0;
+  min-height: 2rem;
+  font-size: 0.8125rem;
+}
+
 .reply-form {
   margin-top: 0.5rem;
   display: flex;
