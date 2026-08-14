@@ -34,14 +34,19 @@ export type SignedAttachment = Attachment & {
  * （supabase/migrations/20260814120000_log_image_storage.sql）。
  *
  * 1枚でも失敗したらそこで止めて投げる。ログ本体は既に保存されているので、
- * 「本文は残ったが画像が付かなかった」状態になりうる。タグと同じ作りで、
- * 今の規模では実害が小さいと判断している。
+ * 「本文は残ったが画像が付かなかった」状態になりうる。
+ *
+ * そのため、何枚目まで終わったかを `onUploaded` で呼び出し側に伝える。
+ * 送り直すときに、済んだ分をもう一度送って画像が重複するのを防ぐため。
+ * 進み具合の表示にも使っている。
  */
 export async function uploadLogImages(
   bookId: string,
   logId: string,
   files: File[],
+  onUploaded?: (count: number) => void,
 ): Promise<void> {
+  let done = 0
   for (const file of files) {
     const shrunk = await shrinkImage(file)
     const path = `${bookId}/${logId}/${crypto.randomUUID()}.${shrunk.extension}`
@@ -64,6 +69,9 @@ export async function uploadLogImages(
       await supabase.storage.from(BUCKET).remove([path])
       throw error
     }
+
+    done += 1
+    onUploaded?.(done)
   }
 }
 

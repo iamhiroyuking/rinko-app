@@ -39,6 +39,16 @@ export default function AddLogView() {
   /** 編集のとき、今の値を読み込むまでフォームを触らせない */
   const [loading, setLoading] = useState(isEditing)
 
+  /**
+   * 本文の投稿は済んだが画像で失敗したとき、そのログのid。
+   *
+   * これが入っている間は投稿ボタンを出さない。同じ内容をもう一度
+   * 送れてしまうと、本文だけのログが二重にできるため。
+   */
+  const [postedLogId, setPostedLogId] = useState<string | null>(null)
+  /** 何枚目まで送れたか。送り直すときに、済んだ分を飛ばす */
+  const [uploadedCount, setUploadedCount] = useState(0)
+
   const tagNames = parseTagNames(tagInput)
 
   useEffect(() => {
@@ -109,13 +119,39 @@ export default function AddLogView() {
         pageEnd: end,
         tagNames,
       })
+      setPostedLogId(created)
 
       // 画像はログが出来てからでないと置き場所（パス）が決まらない
       if (images.length > 0) {
         setUploading(true)
-        await uploadLogImages(bookId, created, images)
+        await uploadLogImages(bookId, created, images, setUploadedCount)
       }
 
+      navigate(`/books/${bookId}/units/${unitId}`)
+    } catch (caught: unknown) {
+      setError(errorMessage(caught))
+    } finally {
+      setBusy(false)
+      setUploading(false)
+    }
+  }
+
+  /**
+   * 失敗した画像だけ送り直す。
+   *
+   * 本文はもう投稿されているので作り直さない。済んだ枚数から先だけ送る。
+   */
+  async function retryImages() {
+    if (!bookId || !unitId || !postedLogId) return
+
+    setError(null)
+    setBusy(true)
+    setUploading(true)
+    try {
+      const remaining = images.slice(uploadedCount)
+      await uploadLogImages(bookId, postedLogId, remaining, (count) =>
+        setUploadedCount(uploadedCount + count),
+      )
       navigate(`/books/${bookId}/units/${unitId}`)
     } catch (caught: unknown) {
       setError(errorMessage(caught))
@@ -242,15 +278,45 @@ export default function AddLogView() {
 
         {error && <p className="screen-error">{error}</p>}
 
-        <button type="submit" className="primary-button" disabled={busy}>
-          {uploading
-            ? '画像を送信中…'
-            : busy
-              ? '保存中…'
-              : isEditing
-                ? '保存する'
-                : '投稿する'}
-        </button>
+        {/* 本文は投稿できて画像だけ失敗した状態。
+            もう一度「投稿する」を押せると本文が二重になるので、
+            送信ボタンは出さず、画像の送り直しだけを出す */}
+        {postedLogId ? (
+          <section className="panel">
+            <h2 className="panel-title">本文は投稿できています</h2>
+            <p className="panel-note">
+              画像{images.length}枚のうち{uploadedCount}
+              枚まで送れました。残りを送り直すか、画像なしのまま進めます。
+            </p>
+            <div className="button-row">
+              <button
+                type="button"
+                className="quiet-button"
+                onClick={() => navigate(`/books/${bookId}/units/${unitId}`)}
+              >
+                画像なしで進む
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={retryImages}
+                disabled={busy}
+              >
+                {uploading ? '送信中…' : '残りの画像を送り直す'}
+              </button>
+            </div>
+          </section>
+        ) : (
+          <button type="submit" className="primary-button" disabled={busy}>
+            {uploading
+              ? `画像を送信中… ${uploadedCount}/${images.length}`
+              : busy
+                ? '保存中…'
+                : isEditing
+                  ? '保存する'
+                  : '投稿する'}
+          </button>
+        )}
       </form>
     </ScreenFrame>
   )
