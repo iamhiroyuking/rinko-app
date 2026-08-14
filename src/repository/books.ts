@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { removeBookImages } from './attachments'
 import type { Database } from './database.types'
 
 type BookRow = Database['public']['Tables']['books']['Row']
@@ -238,6 +239,19 @@ export async function permanentlyDeleteBook(bookId: string): Promise<void> {
   if (userError) throw userError
   const userId = userData.user?.id
   if (!userId) throw new Error('ログインが必要です')
+
+  // 自分以外に参加者がいなければ、この削除で教材ごと消える。
+  // 添付画像はストレージにあり連鎖しないので、先に消しておく。
+  // 参加情報が消えたあとはストレージのポリシーも通らなくなり、
+  // 本人にすら消せないファイルが残ってしまう。
+  const { count, error: countError } = await supabase
+    .from('memberships')
+    .select('id', { count: 'exact', head: true })
+    .eq('book_id', bookId)
+    .neq('user_id', userId)
+
+  if (countError) throw countError
+  if ((count ?? 0) === 0) await removeBookImages(bookId)
 
   const { error } = await supabase
     .from('memberships')

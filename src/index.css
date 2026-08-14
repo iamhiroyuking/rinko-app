@@ -390,6 +390,43 @@ body {
   resize: vertical;
 }
 
+/* 添付画像。縦に積み、幅はカードに合わせる */
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.attachment-link {
+  display: block;
+}
+
+.attachment-image {
+  display: block;
+  max-width: 100%;
+  /* 縦長の写真1枚で画面が埋まらないようにする */
+  max-height: 22rem;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+}
+
+.attachment-missing {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* 投稿前に選んだファイルの一覧 */
+.attachment-name-list {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;

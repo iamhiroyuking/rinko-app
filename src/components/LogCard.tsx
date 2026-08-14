@@ -23,6 +23,11 @@ type Props = {
   isFocused?: boolean
   /** 返信ボタンや返信フォームなど、カードの下に足すもの */
   footer?: ReactNode
+  /**
+   * 添付の期限付きURL（パス → URL）。
+   * バケットが非公開で、URLを保存しておけないので呼ぶ側から渡す。
+   */
+  attachmentUrls?: Map<string, string | null>
 }
 
 /**
@@ -36,6 +41,7 @@ export default function LogCard({
   authorName,
   isFocused = false,
   footer,
+  attachmentUrls,
 }: Props) {
   const pages = formatPageRange(log.pageStart, log.pageEnd)
 
@@ -54,6 +60,38 @@ export default function LogCard({
       </div>
       {log.title && <p className="log-title">{log.title}</p>}
       <p className="log-body">{log.body}</p>
+      {log.attachments.length > 0 && (
+        <div className="attachment-list">
+          {log.attachments.map((file) => {
+            const url = attachmentUrls?.get(file.storagePath) ?? null
+            // URLを作れなかったときは、何が付いていたかだけでも見せる
+            if (!url) {
+              return (
+                <p key={file.id} className="attachment-missing">
+                  {file.fileName}（画像を読み込めませんでした）
+                </p>
+              )
+            }
+            return (
+              // 別タブで開くと、縮小前より大きく見られる
+              <a
+                key={file.id}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="attachment-link"
+              >
+                <img
+                  className="attachment-image"
+                  src={url}
+                  alt={file.fileName}
+                  loading="lazy"
+                />
+              </a>
+            )
+          })}
+        </div>
+      )}
       {log.tagNames.length > 0 && (
         <div className="tag-row">
           {log.tagNames.map((name) => (

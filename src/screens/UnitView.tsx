@@ -18,6 +18,7 @@ import {
   listLogs,
   type LogEntry,
 } from '../repository/logs'
+import { signAttachments } from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
 import {
   formatUnitPageRange,
@@ -69,6 +70,11 @@ export default function UnitView() {
     () => new Set(),
   )
 
+  /** 添付のパス → 期限付きURL。非公開バケットなので表示のたびに要る */
+  const [attachmentUrls, setAttachmentUrls] = useState<
+    Map<string, string | null>
+  >(() => new Map())
+
   /** 検索結果から飛んできたときに指定される、目当てのログ */
   const focusLogId = searchParams.get('log')
 
@@ -114,6 +120,27 @@ export default function UnitView() {
   const logs = state.status === 'ok' ? state.logs : NO_LOGS
 
   const threads = useMemo(() => buildThreads(logs), [logs])
+
+  // 添付のURLはログの取得とは別に作る。期限付きなので保存できず、
+  // ログを読み直すたびに発行し直す必要がある
+  useEffect(() => {
+    const files = logs.flatMap((log) => log.attachments)
+    if (files.length === 0) return
+
+    let cancelled = false
+    signAttachments(files)
+      .then((signed) => {
+        if (cancelled) return
+        setAttachmentUrls(new Map(signed.map((s) => [s.storagePath, s.url])))
+      })
+      .catch(() => {
+        // 画像が出ないだけで、記録そのものは読める。画面は止めない
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [logs])
 
   const pageRangeText = unit
     ? formatUnitPageRange(unit.pageFrom, unit.pageTo)
@@ -406,6 +433,7 @@ export default function UnitView() {
                       log={thread.root}
                       authorName={nameOf(thread.root.authorId)}
                       isFocused={thread.root.id === focusLogId}
+                      attachmentUrls={attachmentUrls}
                       footer={
                         replyingTo === thread.root.id ? (
                           <form
@@ -483,6 +511,7 @@ export default function UnitView() {
                                   log={reply}
                                   authorName={nameOf(reply.authorId)}
                                   isFocused={reply.id === focusLogId}
+                                  attachmentUrls={attachmentUrls}
                                 />
                               </li>
                             ))}
