@@ -50,6 +50,11 @@ export default function App() {
               path="/books/:bookId/units/:unitId/logs/new"
               element={<AddLogView />}
             />
+            {/* 投稿と同じ画面。logId があるかどうかで新規と編集を分けている */}
+            <Route
+              path="/books/:bookId/units/:unitId/logs/:logId/edit"
+              element={<AddLogView />}
+            />
             <Route path="/books/:bookId/search" element={<SearchView />} />
             <Route path="/trash" element={<TrashView />} />
           </Route>

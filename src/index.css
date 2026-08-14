@@ -470,6 +470,33 @@ body {
   font-size: 0.8125rem;
 }
 
+/* 記録の下に並ぶ操作。返信・編集・削除 */
+.log-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.log-action-button {
+  padding: 0;
+  min-height: 2rem;
+  font-size: 0.8125rem;
+}
+
+.log-action-link {
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.log-action-link:hover {
+  color: var(--fg);
+}
+
 /* 返信の開閉。返信リストと同じだけ左に寄せて、どの記録に付いているか分かるようにしている */
 .reply-toggle-button {
   margin: 0.4rem 0 0 1.25rem;
