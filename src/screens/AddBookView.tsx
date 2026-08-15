@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
-import { createBook } from '../repository/books'
+import { createBook, setBookCoverPath } from '../repository/books'
+import { uploadBookCover } from '../repository/attachments'
 import { extractToken, joinBookWithToken } from '../repository/invites'
 import { errorMessage } from '../lib/errorMessage'
+import { ACCEPTED_TYPES } from '../lib/image'
 
 type Mode = 'create' | 'join'
 
@@ -14,8 +16,23 @@ export default function AddBookView() {
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [goal, setGoal] = useState('')
   const [invite, setInvite] = useState('')
+  const [coverFile, setCoverFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /** 選んだ表紙を出すための一時的なURL。選び直しと離脱で取り消す */
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!coverFile) {
+      setPreviewUrl(null)
+      return
+    }
+
+    const url = URL.createObjectURL(coverFile)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [coverFile])
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -23,11 +40,27 @@ export default function AddBookView() {
     setBusy(true)
     try {
       if (mode === 'create') {
-        await createBook({
+        const bookId = await createBook({
           title: title.trim(),
           coverImageUrl: coverImageUrl.trim() || null,
           goal: goal.trim() || null,
         })
+
+        // 表紙は教材が出来てからでないと置き場所が決まらない。
+        // ここで失敗しても教材は残るので、表紙が無いまま先へ進める
+        if (coverFile) {
+          try {
+            const path = await uploadBookCover(bookId, coverFile)
+            await setBookCoverPath(bookId, path)
+          } catch (caught: unknown) {
+            setError(
+              `教材は作成しましたが、表紙を保存できませんでした。${errorMessage(caught)}`,
+            )
+            setBusy(false)
+            return
+          }
+        }
+
         navigate('/')
       } else {
         const bookId = await joinBookWithToken(extractToken(invite))
@@ -92,6 +125,28 @@ export default function AddBookView() {
             </div>
 
             <div className="field">
+              <label htmlFor="coverFile">表紙の画像（任意）</label>
+              <input
+                id="coverFile"
+                type="file"
+                accept={ACCEPTED_TYPES.join(',')}
+                onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+              />
+              {previewUrl && (
+                <ul className="preview-list">
+                  <li className="preview-item">
+                    <img
+                      className="preview-image"
+                      src={previewUrl}
+                      alt={coverFile?.name ?? ''}
+                    />
+                    <span className="preview-name">{coverFile?.name}</span>
+                  </li>
+                </ul>
+              )}
+            </div>
+
+            <div className="field">
               <label htmlFor="coverImageUrl">表紙画像のURL（任意）</label>
               <input
                 id="coverImageUrl"
@@ -100,6 +155,9 @@ export default function AddBookView() {
                 onChange={(e) => setCoverImageUrl(e.target.value)}
                 placeholder="https://…"
               />
+              <p className="panel-note">
+                画像を選んだ場合はそちらを使います。URLは手元に画像が無いときに。
+              </p>
             </div>
           </>
         ) : (

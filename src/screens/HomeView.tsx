@@ -11,6 +11,7 @@ import {
   type ShelfBook,
   type ShelfStatus,
 } from '../repository/books'
+import { signPaths } from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
 
 type LoadState =
@@ -33,6 +34,10 @@ export default function HomeView() {
    *  「プロフィールが見つかりません」が一瞬出てしまう */
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [shelfStatus, setShelfStatus] = useState<ShelfStatus>('reading')
+  /** 表紙のパス → 期限付きURL。非公開バケットなので表示のたびに要る */
+  const [coverUrls, setCoverUrls] = useState<Map<string, string | null>>(
+    () => new Map(),
+  )
 
   const userId = session?.user.id
 
@@ -53,6 +58,29 @@ export default function HomeView() {
       cancelled = true
     }
   }, [userId, shelfStatus])
+
+  // 表紙のURLは期限付きなので保存できず、読み直すたびに発行する
+  useEffect(() => {
+    if (state.status !== 'ok') return
+
+    const paths = state.books.flatMap((book) =>
+      book.coverStoragePath ? [book.coverStoragePath] : [],
+    )
+    if (paths.length === 0) return
+
+    let cancelled = false
+    signPaths(paths)
+      .then((urls) => {
+        if (!cancelled) setCoverUrls(urls)
+      })
+      .catch(() => {
+        // 表紙が出ないだけ。本棚そのものは見せる
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [state])
 
   // プロフィールは切り替えても変わらないので、教材の取得とは分けている。
   // 一緒にすると、タブを押すたびに同じ問い合わせを繰り返すことになる
@@ -133,29 +161,35 @@ export default function HomeView() {
             <p className="empty-state">{EMPTY_MESSAGE[shelfStatus]}</p>
           ) : (
             <ul className="shelf">
-              {state.books.map((book) => (
-                <li key={book.id}>
-                  <Link className="book-card" to={`/books/${book.id}`}>
-                    {book.coverImageUrl ? (
-                      <img
-                        className="book-cover"
-                        src={book.coverImageUrl}
-                        alt=""
-                      />
-                    ) : (
-                      <span className="book-cover book-cover-blank" aria-hidden>
-                        📖
-                      </span>
-                    )}
-                    <span className="book-title">{book.title}</span>
-                    {book.memberCount > 1 && (
-                      <span className="book-shared">
-                        <span aria-hidden>👥</span> {book.memberCount}人で共有
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
+              {state.books.map((book) => {
+                // 上げた表紙が優先。無ければURLの表紙、それも無ければ絵文字
+                const coverSrc = book.coverStoragePath
+                  ? (coverUrls.get(book.coverStoragePath) ?? null)
+                  : book.coverImageUrl
+
+                return (
+                  <li key={book.id}>
+                    <Link className="book-card" to={`/books/${book.id}`}>
+                      {coverSrc ? (
+                        <img className="book-cover" src={coverSrc} alt="" />
+                      ) : (
+                        <span
+                          className="book-cover book-cover-blank"
+                          aria-hidden
+                        >
+                          📖
+                        </span>
+                      )}
+                      <span className="book-title">{book.title}</span>
+                      {book.memberCount > 1 && (
+                        <span className="book-shared">
+                          <span aria-hidden>👥</span> {book.memberCount}人で共有
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </>
