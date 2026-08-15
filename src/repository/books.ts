@@ -21,6 +21,8 @@ export type ShelfBook = {
   id: BookRow['id']
   title: BookRow['title']
   coverImageUrl: BookRow['cover_image_url']
+  /** 手元から上げた表紙の置き場所。URLとは別に持つ */
+  coverStoragePath: BookRow['cover_storage_path']
   shelfStatus: ShelfStatus
   displayOrder: MembershipRow['display_order']
   /** 自分を含む参加者の人数。2人以上なら共有されている */
@@ -49,7 +51,7 @@ export async function listShelfBooks(
   const { data, error } = await supabase
     .from('memberships')
     .select(
-      'display_order, shelf_status, books (id, title, cover_image_url, memberships (user_id))',
+      'display_order, shelf_status, books (id, title, cover_image_url, cover_storage_path, memberships (user_id))',
     )
     .eq('user_id', userId)
     .is('deleted_at', null)
@@ -66,6 +68,7 @@ export async function listShelfBooks(
         id: row.books.id,
         title: row.books.title,
         coverImageUrl: row.books.cover_image_url,
+        coverStoragePath: row.books.cover_storage_path,
         shelfStatus: row.shelf_status,
         displayOrder: row.display_order,
         memberCount: row.books.memberships?.length ?? 1,
@@ -139,6 +142,7 @@ export type Book = {
   id: string
   title: string
   coverImageUrl: string | null
+  coverStoragePath: string | null
   goal: string | null
   createdBy: string
 }
@@ -147,7 +151,7 @@ export type Book = {
 export async function getBook(bookId: string): Promise<Book | null> {
   const { data, error } = await supabase
     .from('books')
-    .select('id, title, cover_image_url, goal, created_by')
+    .select('id, title, cover_image_url, cover_storage_path, goal, created_by')
     .eq('id', bookId)
     .maybeSingle()
 
@@ -158,6 +162,7 @@ export async function getBook(bookId: string): Promise<Book | null> {
     id: data.id,
     title: data.title,
     coverImageUrl: data.cover_image_url,
+    coverStoragePath: data.cover_storage_path,
     goal: data.goal,
     createdBy: data.created_by,
   }
@@ -189,6 +194,24 @@ export async function createBook(input: NewBook): Promise<string> {
 
   if (error) throw error
   return data
+}
+
+/**
+ * 上げた表紙の場所を教材に記録する。
+ *
+ * 教材が出来てからでないと置き場所（パス）が決まらないので、
+ * 作成とは分けている。ログと画像の関係と同じ。
+ */
+export async function setBookCoverPath(
+  bookId: string,
+  storagePath: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('books')
+    .update({ cover_storage_path: storagePath })
+    .eq('id', bookId)
+
+  if (error) throw error
 }
 
 /**

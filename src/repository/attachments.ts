@@ -3,6 +3,9 @@ import { shrinkImage } from '../lib/image'
 
 const BUCKET = 'log-images'
 
+/** 表紙の長辺の上限。本棚では小さく出るので、ログの画像ほど要らない */
+const COVER_MAX_EDGE = 800
+
 /**
  * 期限付きURLの有効時間（秒）。
  *
@@ -179,20 +182,59 @@ export async function signAttachments(
 ): Promise<SignedAttachment[]> {
   if (attachments.length === 0) return []
 
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(
-    attachments.map((a) => a.storagePath),
-    SIGNED_URL_SECONDS,
-  )
-
-  // URLを作れなくても、ログ本体は見せたい。ここでは投げない
-  if (error) return attachments.map((a) => ({ ...a, url: null }))
-
-  const urlByPath = new Map(
-    (data ?? []).map((row) => [row.path, row.signedUrl ?? null]),
-  )
+  const urlByPath = await signPaths(attachments.map((a) => a.storagePath))
 
   return attachments.map((a) => ({
     ...a,
     url: urlByPath.get(a.storagePath) ?? null,
   }))
+}
+
+/**
+ * バケット内のパスに期限付きURLを付ける。
+ *
+ * 添付でも表紙でも同じ発行の仕方なので、ここにまとめてある。
+ * 作れなかったものは null にして返す。画像が出ないだけで画面は動かしたい。
+ */
+export async function signPaths(
+  paths: string[],
+): Promise<Map<string, string | null>> {
+  if (paths.length === 0) return new Map()
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrls(paths, SIGNED_URL_SECONDS)
+
+  if (error) return new Map(paths.map((path) => [path, null]))
+
+  // path が null で返る行は結び付け先が分からないので捨てる
+  return new Map(
+    (data ?? []).flatMap((row) =>
+      row.path ? [[row.path, row.signedUrl ?? null] as const] : [],
+    ),
+  )
+}
+
+/**
+ * 教材の表紙を保存し、そのパスを返す。
+ *
+ * ログの画像と同じバケットに <book_id>/cover/<uuid>.jpg として置く。
+ * パスの先頭が教材idなのでポリシーがそのまま効き、教材を完全削除した
+ * ときの後片付け（removeBookImages）にも自動で含まれる。
+ *
+ * 表紙は本棚に小さく並ぶだけなので、ログの画像より小さく縮める。
+ */
+export async function uploadBookCover(
+  bookId: string,
+  file: File,
+): Promise<string> {
+  const shrunk = await shrinkImage(file, COVER_MAX_EDGE)
+  const path = `${bookId}/cover/${crypto.randomUUID()}.${shrunk.extension}`
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, shrunk.blob, { contentType: shrunk.mimeType })
+
+  if (error) throw error
+  return path
 }

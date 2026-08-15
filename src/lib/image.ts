@@ -7,7 +7,7 @@
  * 程度になり、同じ1GBで3,400枚入る。数式は1600pxあれば十分読める。
  */
 
-/** 縮小後の長辺の上限 */
+/** 縮小後の長辺の上限。表紙のように小さく出すものは呼び出し側で下げる */
 const MAX_EDGE = 1600
 
 /** JPEGの品質。0.8を下回ると細い線が潰れて数式が読みにくくなる */
@@ -35,7 +35,10 @@ export type ShrunkImage = {
  * 元から小さい画像でも作り直している。撮影した写真はJPEGでも
  * 位置情報などのメタデータを抱えていることがあり、描き直すと落ちるため。
  */
-export async function shrinkImage(file: File): Promise<ShrunkImage> {
+export async function shrinkImage(
+  file: File,
+  maxEdge: number = MAX_EDGE,
+): Promise<ShrunkImage> {
   if (!ACCEPTED_TYPES.includes(file.type)) {
     throw new Error(
       'JPEG・PNG・WebPの画像だけ添付できます。iPhoneのHEICは写真アプリから選ぶとJPEGになります。',
@@ -48,7 +51,7 @@ export async function shrinkImage(file: File): Promise<ShrunkImage> {
 
   const bitmap = await loadBitmap(file)
 
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height))
   const width = Math.round(bitmap.width * scale)
   const height = Math.round(bitmap.height * scale)
 
