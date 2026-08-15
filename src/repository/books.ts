@@ -77,6 +77,35 @@ export async function listShelfBooks(
   })
 }
 
+/**
+ * そのステータスに何冊あるかを数える。
+ *
+ * 本棚は「学習中」を主役にして、学習予定と学習完了は控えめな導線から
+ * 見に行く形にしている。押す前に冊数が分かると、0冊のときに
+ * 空振りしなくて済む。
+ *
+ * 中身は要らないので件数だけ受け取る。user_id で絞るのを忘れないこと
+ * （listShelfBooks と同じ落とし穴）。
+ */
+export async function countShelfBooks(
+  shelfStatus: ShelfStatus,
+): Promise<number> {
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const userId = userData.user?.id
+  if (!userId) throw new Error('ログインが必要です')
+
+  const { count, error } = await supabase
+    .from('memberships')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .eq('shelf_status', shelfStatus)
+
+  if (error) throw error
+  return count ?? 0
+}
+
 /** その教材に対する「自分の」参加情報。共有相手のものは含めない */
 export type MyShelfEntry = {
   shelfStatus: ShelfStatus
