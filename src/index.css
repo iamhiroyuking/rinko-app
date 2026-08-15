@@ -5,17 +5,31 @@
 
 :root {
   --bg: #ffffff;
-  --fg: #1b231e;
-  --muted: #5c6961;
-  --line: #d8dfd7;
-  --accent: #2e6355;
-  --surface-2: #f2f5f1;
+  --fg: #161b22;
+  --muted: #59616b;
+  --line: #dbe1e8;
+  --surface-2: #f2f5f9;
+
+  /*
+   * 押せるものの色を2つに分けている。
+   *
+   * --accent は「面で押すもの」。塗りのボタン、選ばれているタブ、
+   * 進捗バー、焦点の枠。
+   * --link は「文字で押すもの」。本文に混ざるリンク。
+   *
+   * 同じ青をどちらにも使うと、画面が青一色になって
+   * 「どれがボタンでどれがリンクか」が読み取れなくなる。
+   * 緑のときは色数が少なく目立たなかったが、青にすると露骨に出る。
+   */
+  --accent: #1b56b8;
+  --link: #0b5cad;
+
   --danger: #a6543d;
   --danger-bg: #f3e1da;
   --warn: #7a4e14;
   --warn-bg: #f5e3c8;
-  --done: #1f5b49;
-  --done-bg: #dcebe3;
+  --done: #1b6b57;
+  --done-bg: #dcece6;
 
   font-family:
     -apple-system, BlinkMacSystemFont, 'Hiragino Sans',
@@ -25,18 +39,22 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111611;
-    --fg: #e7ece6;
-    --muted: #93a099;
-    --line: #2a342c;
-    --accent: #6fae93;
-    --surface-2: #1d2620;
+    --bg: #10141a;
+    --fg: #e6eaf0;
+    --muted: #98a2b0;
+    --line: #28303a;
+    --surface-2: #1a212a;
+
+    /* 暗い背景に濃い青は沈むので、明度を上げた青にしている */
+    --accent: #79b0f7;
+    --link: #8fc2ff;
+
     --danger: #d98266;
     --danger-bg: #3a241c;
     --warn: #e3a857;
     --warn-bg: #3a2c14;
-    --done: #6fae93;
-    --done-bg: #1c3a2e;
+    --done: #6fc0a5;
+    --done-bg: #173029;
   }
 }
 
@@ -94,7 +112,7 @@ body {
   min-height: 2.75rem;
   padding: 0 0.75rem 0 0.5rem;
   border-radius: 0.5rem;
-  color: var(--accent);
+  color: var(--link);
   text-decoration: none;
   font-size: 0.9375rem;
 }
@@ -243,7 +261,7 @@ body {
 .next-unit-title {
   margin: 0;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--link);
   text-decoration: none;
 }
 
