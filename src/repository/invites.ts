@@ -88,6 +88,29 @@ export async function issueInviteToken(
 }
 
 /**
+ * その権限の招待リンクを無効にする。
+ *
+ * 行そのものを消す。無効にした印を付ける形にすると、
+ * 「有効なリンクはどれか」を毎回判定することになり、
+ * 消し忘れたリンクが生き続ける事故に繋がる。
+ *
+ * 既に参加している人はそのまま残る。リンクは入口を閉じるだけで、
+ * 中にいる人を追い出すものではない。
+ */
+export async function revokeInviteToken(
+  bookId: string,
+  role: InviteRole,
+): Promise<void> {
+  const { error } = await supabase
+    .from('invite_links')
+    .delete()
+    .eq('book_id', bookId)
+    .eq('role', role)
+
+  if (error) throw error
+}
+
+/**
  * 招待リンクで教材に参加し、その教材のidを返す。
  *
  * データベースの関数を呼んでいる。招待された人はまだ参加者ではないため、

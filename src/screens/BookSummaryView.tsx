@@ -19,6 +19,7 @@ import {
   getInviteToken,
   inviteUrlOf,
   issueInviteToken,
+  revokeInviteToken,
   INVITE_ROLES,
   INVITE_ROLE_LABEL,
   type InviteRole,
@@ -53,6 +54,7 @@ export default function BookSummaryView() {
   const navigate = useNavigate()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [issuing, setIssuing] = useState(false)
+  const [revoking, setRevoking] = useState(false)
   /** 発行しようとしている権限。既定は書き込める方（今までの挙動） */
   const [inviteRole, setInviteRole] = useState<InviteRole>('editor')
   const [copied, setCopied] = useState(false)
@@ -152,6 +154,36 @@ export default function BookSummaryView() {
       setActionError(errorMessage(caught))
     } finally {
       setIssuing(false)
+    }
+  }
+
+  /**
+   * リンクを無効にする。
+   *
+   * 配ったリンクが外に流れたときに止める手段。既に参加している人は
+   * 残るので、そこは確認の文言で伝えておく。
+   */
+  async function handleRevoke() {
+    if (!bookId || state.status !== 'ok') return
+
+    const confirmed = window.confirm(
+      `${INVITE_ROLE_LABEL[inviteRole]}リンクを無効にしますか？\nこのリンクからは参加できなくなります。既に参加している人はそのまま残ります。`,
+    )
+    if (!confirmed) return
+
+    setActionError(null)
+    setRevoking(true)
+    try {
+      await revokeInviteToken(bookId, inviteRole)
+      setState(
+        inviteRole === 'editor'
+          ? { ...state, token: null }
+          : { ...state, viewerToken: null },
+      )
+    } catch (caught: unknown) {
+      setActionError(errorMessage(caught))
+    } finally {
+      setRevoking(false)
     }
   }
 
@@ -330,13 +362,28 @@ export default function BookSummaryView() {
                       : 'このリンクを渡すと、相手は読むことだけできます。書き込みはできません。'}
                   </p>
                   <code className="invite-url">{inviteUrlOf(shownToken)}</code>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={handleCopy}
-                  >
-                    {copied ? 'コピーしました' : 'リンクをコピー'}
-                  </button>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={handleCopy}
+                    >
+                      {copied ? 'コピーしました' : 'リンクをコピー'}
+                    </button>
+                    <button
+                      type="button"
+                      className="quiet-button"
+                      onClick={handleRevoke}
+                      disabled={revoking}
+                    >
+                      {revoking
+                        ? '無効にしています…'
+                        : 'このリンクを無効にする'}
+                    </button>
+                  </div>
+                  <p className="panel-note">
+                    無効にすると、このリンクからは参加できなくなります。既に参加している人はそのまま残ります。
+                  </p>
                 </>
               ) : (
                 <>
