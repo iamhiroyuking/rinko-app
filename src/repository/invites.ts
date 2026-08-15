@@ -24,17 +24,32 @@ export function extractToken(input: string): string {
   return trimmed
 }
 
+/** 招待リンクで渡せる権限 */
+export type InviteRole = 'editor' | 'viewer'
+
+export const INVITE_ROLE_LABEL: Record<InviteRole, string> = {
+  editor: '書き込める',
+  viewer: '見るだけ',
+}
+
+export const INVITE_ROLES: InviteRole[] = ['editor', 'viewer']
+
 /**
- * その教材の招待リンクを取り出す。無ければ null。
+ * その教材の、その権限の招待リンクを取り出す。無ければ null。
  *
- * 発行のたびに増やすのではなく、既にあるものを使い回す。
- * 有効なリンクが複数あると、どれを配ったか分からなくなるため。
+ * 発行のたびに増やすのではなく、権限ごとに1本を使い回す。
+ * 同じ権限のリンクが複数あると、どれを配ったか分からなくなるため。
+ * 権限が違うものは別のリンクにする。用途が違うので混ざると困る。
  */
-export async function getInviteToken(bookId: string): Promise<string | null> {
+export async function getInviteToken(
+  bookId: string,
+  role: InviteRole,
+): Promise<string | null> {
   const { data, error } = await supabase
     .from('invite_links')
     .select('token')
     .eq('book_id', bookId)
+    .eq('role', role)
     .order('created_at')
     .limit(1)
     .maybeSingle()
@@ -43,9 +58,12 @@ export async function getInviteToken(bookId: string): Promise<string | null> {
   return data?.token ?? null
 }
 
-/** 招待リンクを発行する。既にあればそれを返す */
-export async function issueInviteToken(bookId: string): Promise<string> {
-  const existing = await getInviteToken(bookId)
+/** 招待リンクを発行する。同じ権限のものが既にあればそれを返す */
+export async function issueInviteToken(
+  bookId: string,
+  role: InviteRole,
+): Promise<string> {
+  const existing = await getInviteToken(bookId, role)
   if (existing) return existing
 
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -59,7 +77,7 @@ export async function issueInviteToken(bookId: string): Promise<string> {
     .insert({
       book_id: bookId,
       token: generateToken(),
-      role: 'editor',
+      role,
       created_by: userId,
     })
     .select('token')

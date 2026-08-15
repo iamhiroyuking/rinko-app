@@ -19,7 +19,11 @@ import {
   getInviteToken,
   inviteUrlOf,
   issueInviteToken,
+  INVITE_ROLES,
+  INVITE_ROLE_LABEL,
+  type InviteRole,
 } from '../repository/invites'
+import { useSession } from '../auth/SessionContext'
 import { errorMessage } from '../lib/errorMessage'
 import { formatUnitPageRange } from '../lib/pageRange'
 
@@ -30,6 +34,7 @@ type LoadState =
       book: Book | null
       members: BookMember[]
       token: string | null
+      viewerToken: string | null
       shelfEntry: MyShelfEntry | null
       logCount: number
       unitCount: number
@@ -44,9 +49,12 @@ function formatJoinedAt(joinedAt: string): string {
 
 export default function BookSummaryView() {
   const { bookId } = useParams()
+  const { session } = useSession()
   const navigate = useNavigate()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [issuing, setIssuing] = useState(false)
+  /** 発行しようとしている権限。既定は書き込める方（今までの挙動） */
+  const [inviteRole, setInviteRole] = useState<InviteRole>('editor')
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [shelfBusy, setShelfBusy] = useState(false)
@@ -58,11 +66,12 @@ export default function BookSummaryView() {
     setState({ status: 'loading' })
 
     const load = async () => {
-      const [book, members, token, shelfEntry, logCount, units] =
+      const [book, members, token, viewerToken, shelfEntry, logCount, units] =
         await Promise.all([
           getBook(bookId),
           listBookMembers(bookId),
-          getInviteToken(bookId),
+          getInviteToken(bookId, 'editor'),
+          getInviteToken(bookId, 'viewer'),
           getMyShelfEntry(bookId),
           countBookLogs(bookId),
           listUnits(bookId),
@@ -71,6 +80,7 @@ export default function BookSummaryView() {
         book,
         members,
         token,
+        viewerToken,
         shelfEntry,
         logCount,
         unitCount: units.length,
@@ -95,6 +105,12 @@ export default function BookSummaryView() {
   const book = state.status === 'ok' ? state.book : null
   const members = state.status === 'ok' ? state.members : []
   const token = state.status === 'ok' ? state.token : null
+  const viewerToken = state.status === 'ok' ? state.viewerToken : null
+  const shownToken = inviteRole === 'editor' ? token : viewerToken
+
+  /** 自分の権限。閲覧者には書き込みの導線を出さない */
+  const myRole = members.find((m) => m.userId === session?.user.id)?.role
+  const canEdit = myRole !== 'viewer'
   const shelfEntry = state.status === 'ok' ? state.shelfEntry : null
   const nextUnit = state.status === 'ok' ? state.nextUnit : null
 
@@ -126,8 +142,12 @@ export default function BookSummaryView() {
     setActionError(null)
     setIssuing(true)
     try {
-      const issued = await issueInviteToken(bookId)
-      setState({ ...state, token: issued })
+      const issued = await issueInviteToken(bookId, inviteRole)
+      setState(
+        inviteRole === 'editor'
+          ? { ...state, token: issued }
+          : { ...state, viewerToken: issued },
+      )
     } catch (caught: unknown) {
       setActionError(errorMessage(caught))
     } finally {
@@ -154,9 +174,9 @@ export default function BookSummaryView() {
   }
 
   async function handleCopy() {
-    if (!token) return
+    if (!shownToken) return
     try {
-      await navigator.clipboard.writeText(inviteUrlOf(token))
+      await navigator.clipboard.writeText(inviteUrlOf(shownToken))
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -277,38 +297,65 @@ export default function BookSummaryView() {
             </ul>
           </section>
 
-          <section className="panel">
-            <h2 className="panel-title">共有</h2>
-            {token ? (
-              <>
-                <p className="panel-note">
-                  このリンクを渡すと、相手も同じ教材に書き込めるようになります。
-                </p>
-                <code className="invite-url">{inviteUrlOf(token)}</code>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={handleCopy}
-                >
-                  {copied ? 'コピーしました' : 'リンクをコピー'}
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="panel-note">
-                  まだ共有していません。リンクを発行すると、渡した相手が参加できます。
-                </p>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={handleIssue}
-                  disabled={issuing}
-                >
-                  {issuing ? '発行中…' : '共有リンクを発行'}
-                </button>
-              </>
-            )}
-          </section>
+          {/* 共有リンクを配れるのは編集者だけ。閲覧者が他人を招けると、
+              渡された権限より広いことができてしまう */}
+          {canEdit && (
+            <section className="panel">
+              <h2 className="panel-title">共有</h2>
+
+              {/* 権限ごとに別のリンクにしている。用途が違うので混ざると困る */}
+              <div className="status-choice">
+                {INVITE_ROLES.map((role) => (
+                  <button
+                    key={role}
+                    type="button"
+                    className={
+                      inviteRole === role
+                        ? 'status-button selected'
+                        : 'status-button'
+                    }
+                    aria-pressed={inviteRole === role}
+                    onClick={() => setInviteRole(role)}
+                  >
+                    {INVITE_ROLE_LABEL[role]}
+                  </button>
+                ))}
+              </div>
+
+              {shownToken ? (
+                <>
+                  <p className="panel-note">
+                    {inviteRole === 'editor'
+                      ? 'このリンクを渡すと、相手も同じ教材に書き込めるようになります。'
+                      : 'このリンクを渡すと、相手は読むことだけできます。書き込みはできません。'}
+                  </p>
+                  <code className="invite-url">{inviteUrlOf(shownToken)}</code>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={handleCopy}
+                  >
+                    {copied ? 'コピーしました' : 'リンクをコピー'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="panel-note">
+                    {INVITE_ROLE_LABEL[inviteRole]}
+                    リンクはまだ発行していません。
+                  </p>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={handleIssue}
+                    disabled={issuing}
+                  >
+                    {issuing ? '発行中…' : '共有リンクを発行'}
+                  </button>
+                </>
+              )}
+            </section>
+          )}
 
           <section className="panel">
             <h2 className="panel-title">この教材を消す</h2>

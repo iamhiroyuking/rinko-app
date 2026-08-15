@@ -215,6 +215,15 @@ export default function UnitView() {
     return members.find((m) => m.userId === userId)?.displayName ?? '不明'
   }
 
+  /**
+   * 自分の権限。閲覧者には書き込みの導線を出さない。
+   *
+   * しおりは個人のものなので閲覧者にも残す（log_marks の追加条件は
+   * 参加していることで、編集できることではない）。
+   */
+  const myRole = members.find((m) => m.userId === session?.user.id)?.role
+  const canEdit = myRole !== 'viewer'
+
   function startEditingPages() {
     if (!unit) return
     setPageFromInput(unit.pageFrom !== null ? String(unit.pageFrom) : '')
@@ -307,6 +316,7 @@ export default function UnitView() {
    * データベース側も投稿者本人しか変更・削除できないようにしてある。
    */
   function ownLogActions(log: LogEntry, replyCount: number) {
+    if (!canEdit) return null
     if (log.authorId !== session?.user.id) return null
     return (
       <>
@@ -412,7 +422,7 @@ export default function UnitView() {
       description="新しい記録が上に並びます。返信は記録の下に古い順で並びます。"
       backTo={`/books/${bookId}/units`}
       primaryAction={
-        unit
+        unit && canEdit
           ? {
               label: '🗨 発言する',
               to: `/books/${bookId}/units/${unitId}/logs/new`,
@@ -444,13 +454,19 @@ export default function UnitView() {
 
           <p className="screen-param">
             担当: {nameOf(unit.presenterId)} ・{' '}
-            {unit.scheduledDate ?? '日程未定'} ・{' '}
-            <Link
-              className="log-action-link"
-              to={`/books/${bookId}/units/${unitId}/edit`}
-            >
-              この回を編集
-            </Link>
+            {unit.scheduledDate ?? '日程未定'}
+            {canEdit && (
+              <>
+                {' '}
+                ・{' '}
+                <Link
+                  className="log-action-link"
+                  to={`/books/${bookId}/units/${unitId}/edit`}
+                >
+                  この回を編集
+                </Link>
+              </>
+            )}
           </p>
 
           <section className="panel">
@@ -467,14 +483,16 @@ export default function UnitView() {
                   }
                   aria-pressed={unit.status === status}
                   onClick={() => changeStatus(status)}
-                  disabled={statusBusy}
+                  disabled={statusBusy || !canEdit}
                 >
                   {UNIT_STATUS_LABEL[status]}
                 </button>
               ))}
             </div>
             <p className="panel-note">
-              参加者なら誰でも変更できます。輪講中に気づいた人がその場で直せるようにしています。
+              {canEdit
+                ? '参加者なら誰でも変更できます。輪講中に気づいた人がその場で直せるようにしています。'
+                : 'あなたは閲覧者なので変更できません。'}
             </p>
             {statusError && <p className="screen-error">{statusError}</p>}
           </section>
@@ -553,13 +571,15 @@ export default function UnitView() {
                     )}
                   </>
                 )}
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={startEditingPages}
-                >
-                  編集する
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={startEditingPages}
+                  >
+                    編集する
+                  </button>
+                )}
               </>
             )}
           </section>
@@ -567,24 +587,28 @@ export default function UnitView() {
           {/* 輪講中に浮かんだことをその場で書けるようにする。
               画面を移ると読んでいた位置を失ううえ、戻る手間もかかる。
               種別・ページ・タグ・画像を使いたいときは「発言する」へ */}
-          <BodyForm
-            label="いま書く"
-            fieldId="quick-post"
-            placeholder="疑問でも気づいたことでも"
-            submitLabel="投稿する"
-            busyLabel="投稿中…"
-            value={quickBody}
-            onChange={setQuickBody}
-            onSubmit={submitQuickPost}
-            busy={quickBusy}
-            error={quickError}
-          />
+          {canEdit && (
+            <BodyForm
+              label="いま書く"
+              fieldId="quick-post"
+              placeholder="疑問でも気づいたことでも"
+              submitLabel="投稿する"
+              busyLabel="投稿中…"
+              value={quickBody}
+              onChange={setQuickBody}
+              onSubmit={submitQuickPost}
+              busy={quickBusy}
+              error={quickError}
+            />
+          )}
 
           {logError && <p className="screen-error">{logError}</p>}
 
           {threads.length === 0 ? (
             <p className="empty-state">
-              まだ記録がありません。上の「いま書く」から残せます。
+              {canEdit
+                ? 'まだ記録がありません。上の「いま書く」から残せます。'
+                : 'まだ記録がありません。'}
             </p>
           ) : (
             <ul className="log-list">
@@ -623,13 +647,15 @@ export default function UnitView() {
                           />
                         ) : (
                           <div className="log-actions">
-                            <button
-                              type="button"
-                              className="quiet-button log-action-button"
-                              onClick={() => openReply(thread.root.id)}
-                            >
-                              返信する
-                            </button>
+                            {canEdit && (
+                              <button
+                                type="button"
+                                className="quiet-button log-action-button"
+                                onClick={() => openReply(thread.root.id)}
+                              >
+                                返信する
+                              </button>
+                            )}
                             {ownLogActions(thread.root, thread.replies.length)}
                           </div>
                         )
