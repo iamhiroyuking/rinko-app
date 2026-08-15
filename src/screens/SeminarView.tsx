@@ -87,6 +87,18 @@ export default function SeminarView() {
     return state.members.find((m) => m.userId === userId)?.displayName ?? '不明'
   }
 
+  /**
+   * 自分の権限。閲覧者には書き込みの導線を出さない。
+   *
+   * 参加者一覧をすでに取っているので、そこから引く。
+   * データベース側も編集者でなければ弾くので、これは見せ方の話。
+   */
+  const myRole =
+    state.status === 'ok'
+      ? state.members.find((m) => m.userId === session?.user.id)?.role
+      : undefined
+  const canEdit = myRole !== 'viewer'
+
   async function handleDelete(unit: Unit) {
     const confirmed = window.confirm(
       `第${unit.order}回「${unit.title}」をゴミ箱に入れますか？\nゴミ箱から復元できます。`,
@@ -118,10 +130,14 @@ export default function SeminarView() {
       }
       description="輪講の回が第N回の順に並びます。"
       backTo={`/books/${bookId}`}
-      primaryAction={{
-        label: '＋ 回を作成',
-        to: `/books/${bookId}/units/new`,
-      }}
+      primaryAction={
+        canEdit
+          ? {
+              label: '＋ 回を作成',
+              to: `/books/${bookId}/units/new`,
+            }
+          : undefined
+      }
       secondaryLinks={[{ label: '記録を検索', to: `/books/${bookId}/search` }]}
     >
       {state.status === 'loading' && (
@@ -142,12 +158,14 @@ export default function SeminarView() {
         <>
           {state.units.length === 0 ? (
             <p className="empty-state">
-              まだ回がありません。「回を作成」から追加してください。
+              {canEdit
+                ? 'まだ回がありません。「回を作成」から追加してください。'
+                : 'まだ回がありません。'}
             </p>
           ) : (
             <ul className="unit-list">
               {state.units.map((unit) => {
-                const canDelete = unit.createdBy === session?.user.id
+                const canDelete = canEdit && unit.createdBy === session?.user.id
                 const pageText = formatUnitPageRange(unit.pageFrom, unit.pageTo)
                 return (
                   <li key={unit.id} className="unit-row-container">
