@@ -6,8 +6,10 @@ import {
   filterLogs,
   listSearchableLogs,
   topTagNames,
+  type MatchedIn,
   type SearchableLog,
 } from '../repository/search'
+import { listMyMarksInBook } from '../repository/marks'
 import { errorMessage } from '../lib/errorMessage'
 
 type LoadState =
@@ -52,6 +54,9 @@ export default function SearchView() {
   const { bookId } = useParams()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [query, setQuery] = useState('')
+  /** 自分がしおりを付けているログのid。共有相手のものは入らない */
+  const [markedLogIds, setMarkedLogIds] = useState<Set<string>>(() => new Set())
+  const [markedOnly, setMarkedOnly] = useState(false)
 
   useEffect(() => {
     if (!bookId) return
@@ -80,11 +85,50 @@ export default function SearchView() {
     }
   }, [bookId])
 
+  // しおりは個人のものなので、記録の取得とは分けている
+  useEffect(() => {
+    if (!bookId) return
+    let cancelled = false
+
+    listMyMarksInBook(bookId)
+      .then((marks) => {
+        if (!cancelled) setMarkedLogIds(marks)
+      })
+      .catch(() => {
+        // 絞り込みが使えないだけ。検索そのものは動く
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [bookId])
+
   const logs = state.status === 'ok' ? state.logs : NO_LOGS
   const members = state.status === 'ok' ? state.members : NO_MEMBERS
 
   const tags = useMemo(() => topTagNames(logs), [logs])
-  const hits = useMemo(() => filterLogs(logs, query), [logs, query])
+  const allHits = useMemo(() => filterLogs(logs, query), [logs, query])
+
+  /**
+   * しおりだけに絞る。キーワードとは別の軸なので、検索の結果に後からかける。
+   *
+   * キーワードが空でも、しおりだけなら一覧として意味がある。
+   * 「後で振り返りたいものを並べる」のがしおりの目的なので、
+   * 言葉を思い出せなくても開けるようにしておく。
+   */
+  const hits = useMemo(() => {
+    if (!markedOnly) return allHits
+    if (query.trim() !== '') {
+      return allHits.filter((hit) => markedLogIds.has(hit.logId))
+    }
+    return logs
+      .filter((log) => markedLogIds.has(log.logId))
+      .map((log) => ({ ...log, matchedIn: [] as MatchedIn[] }))
+      .sort(
+        (a, b) =>
+          a.unitOrder - b.unitOrder || a.createdAt.localeCompare(b.createdAt),
+      )
+  }, [allHits, logs, markedOnly, markedLogIds, query])
 
   const nameOf = (userId: string) =>
     members.find((m) => m.userId === userId)?.displayName ?? '不明'
@@ -105,6 +149,18 @@ export default function SearchView() {
           placeholder="例: 正則化"
           autoComplete="off"
         />
+      </div>
+
+      {/* しおりはキーワードとは別の軸なので、入力欄と並べず下に置く */}
+      <div className="status-choice">
+        <button
+          type="button"
+          className={markedOnly ? 'status-button selected' : 'status-button'}
+          aria-pressed={markedOnly}
+          onClick={() => setMarkedOnly((on) => !on)}
+        >
+          <span aria-hidden>🔖</span> しおりだけ（{markedLogIds.size}）
+        </button>
       </div>
 
       {state.status === 'loading' && (
@@ -135,13 +191,17 @@ export default function SearchView() {
             </section>
           )}
 
-          {query.trim() === '' ? (
+          {query.trim() === '' && !markedOnly ? (
             <p className="empty-state">
               キーワードを入力するか、上のハッシュタグを押してください。
             </p>
           ) : hits.length === 0 ? (
             <p className="empty-state">
-              「{query.trim()}」に一致する記録は見つかりませんでした。
+              {markedOnly && query.trim() === ''
+                ? 'しおりを付けた記録はまだありません。記録の右上から付けられます。'
+                : markedOnly
+                  ? `しおりを付けた記録に「${query.trim()}」は見つかりませんでした。`
+                  : `「${query.trim()}」に一致する記録は見つかりませんでした。`}
             </p>
           ) : (
             <>

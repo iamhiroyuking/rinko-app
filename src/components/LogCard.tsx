@@ -28,6 +28,9 @@ type Props = {
    * バケットが非公開で、URLを保存しておけないので呼ぶ側から渡す。
    */
   attachmentUrls?: Map<string, string | null>
+  /** しおりが付いているか。渡さない画面ではしおりの操作を出さない */
+  isMarked?: boolean
+  onToggleMark?: () => void
 }
 
 /**
@@ -42,6 +45,8 @@ export default function LogCard({
   isFocused = false,
   footer,
   attachmentUrls,
+  isMarked = false,
+  onToggleMark,
 }: Props) {
   const pages = formatPageRange(log.pageStart, log.pageEnd)
 
@@ -57,6 +62,21 @@ export default function LogCard({
         )}
         {pages && <span className="log-page">{pages}</span>}
         <span className="log-time">{formatTimestamp(log.createdAt)}</span>
+        {/* しおりは自分だけのもの。共有相手の画面には出ない */}
+        {onToggleMark && (
+          <button
+            type="button"
+            className={isMarked ? 'mark-button marked' : 'mark-button'}
+            aria-pressed={isMarked}
+            title={isMarked ? 'しおりを外す' : 'しおりを付ける'}
+            onClick={onToggleMark}
+          >
+            <span aria-hidden>{isMarked ? '🔖' : '📑'}</span>
+            <span className="visually-hidden">
+              {isMarked ? 'しおりを外す' : 'しおりを付ける'}
+            </span>
+          </button>
+        )}
       </div>
       {log.title && <p className="log-title">{log.title}</p>}
       <p className="log-body">{log.body}</p>

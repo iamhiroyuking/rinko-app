@@ -22,6 +22,7 @@ import {
   type LogEntry,
 } from '../repository/logs'
 import { signAttachments } from '../repository/attachments'
+import { addMark, listMyMarks, removeMark } from '../repository/marks'
 import { errorMessage } from '../lib/errorMessage'
 import {
   formatUnitPageRange,
@@ -65,6 +66,9 @@ export default function UnitView() {
 
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null)
   const [logError, setLogError] = useState<string | null>(null)
+
+  /** 自分がしおりを付けているログのid。共有相手のものは入らない */
+  const [markedLogIds, setMarkedLogIds] = useState<Set<string>>(() => new Set())
 
   /** 回の画面からその場で書く分。返信とは別に持つ（同時に開けるため） */
   const [quickBody, setQuickBody] = useState('')
@@ -153,6 +157,54 @@ export default function UnitView() {
       cancelled = true
     }
   }, [logs])
+
+  // しおりはログとは別に取る。個人のもので、ログ本体には持たせていない
+  useEffect(() => {
+    if (logs.length === 0) return
+
+    let cancelled = false
+    listMyMarks(logs.map((log) => log.id))
+      .then((marks) => {
+        if (!cancelled) setMarkedLogIds(marks)
+      })
+      .catch(() => {
+        // しおりが出ないだけ。記録そのものは読めるので画面は止めない
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [logs])
+
+  /**
+   * しおりを付け外しする。
+   *
+   * 先に画面を変えてから送っている。押した手応えを待たせたくないため。
+   * 失敗したら元に戻す。
+   */
+  async function toggleMark(logId: string) {
+    const wasMarked = markedLogIds.has(logId)
+
+    setMarkedLogIds((prev) => {
+      const next = new Set(prev)
+      if (wasMarked) next.delete(logId)
+      else next.add(logId)
+      return next
+    })
+
+    try {
+      if (wasMarked) await removeMark(logId)
+      else await addMark(logId)
+    } catch (caught: unknown) {
+      setMarkedLogIds((prev) => {
+        const next = new Set(prev)
+        if (wasMarked) next.add(logId)
+        else next.delete(logId)
+        return next
+      })
+      setLogError(errorMessage(caught))
+    }
+  }
 
   const pageRangeText = unit
     ? formatUnitPageRange(unit.pageFrom, unit.pageTo)
@@ -552,6 +604,8 @@ export default function UnitView() {
                       authorName={nameOf(thread.root.authorId)}
                       isFocused={thread.root.id === focusLogId}
                       attachmentUrls={attachmentUrls}
+                      isMarked={markedLogIds.has(thread.root.id)}
+                      onToggleMark={() => toggleMark(thread.root.id)}
                       footer={
                         replyingTo === thread.root.id ? (
                           <BodyForm
@@ -608,6 +662,8 @@ export default function UnitView() {
                                   authorName={nameOf(reply.authorId)}
                                   isFocused={reply.id === focusLogId}
                                   attachmentUrls={attachmentUrls}
+                                  isMarked={markedLogIds.has(reply.id)}
+                                  onToggleMark={() => toggleMark(reply.id)}
                                   footer={
                                     <div className="log-actions">
                                       {ownLogActions(reply, 0)}
