@@ -137,6 +137,28 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - **結合先で絞るときは `!inner` が要る。** `countBookLogs` で `units!inner (book_id)` と
   書かないと `units` 側の条件が効かず、教材をまたいで数える
 
+### 検証を安くする道具（2026-08-15に追加）
+
+**純粋関数はブラウザで確かめない。** `npm test`（Vitest）で37件が走る。
+進捗率・スレッドの組み立て・検索の絞り込みと並び順・ページ範囲が対象。
+「後からテストを書ける」とコメントしてある関数はここに入っている。
+UIのテストは書かない方針のまま。
+
+**検証用のデータは手で組み立てない。** 開発時だけ `window.rinko` が生える
+（`src/dev/seed.ts`、`main.tsx` の `import.meta.env.DEV` の内側で読み込む）。
+
+```js
+await window.rinko.seed({ title: '確認', units: 2, logsPerUnit: 2, images: 2 })
+await window.rinko.cleanup()   // [seed] が付いた教材だけを完全削除
+```
+
+`cleanup` は目印 `[seed]` の付いた教材しか消さない。実際の教材を
+巻き込まないための線引きなので、目印を外さないこと。書き込みは既存の
+リポジトリ関数だけを通しているので、本番と同じ経路でデータができる。
+
+**本番のバンドルには入らない。** 条件を変えたときは `dist/assets/*.js` を
+検索して混入していないことを確かめること。
+
 ### ブラウザで検証するときの注意（2026-08-13に踏んだもの）
 - **自動操作のブラウザでは `window.confirm` が自動的にキャンセル扱いになる。** 削除が
   「押しても何も起きない」ように見える。`window.confirm = () => true` に差し替えてから押す
