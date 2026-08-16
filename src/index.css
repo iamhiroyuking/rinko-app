@@ -797,6 +797,20 @@ button.unit-state-summary:hover {
   border-radius: 0.6rem;
 }
 
+/* 並べ方の切り替え。記録の一覧のすぐ上に置く */
+.log-order-choice {
+  margin-bottom: -0.5rem;
+}
+
+/* ページ順のときの区切り。ここから先は手がかりが無いことを伝える */
+.log-group-divider {
+  margin: 0.5rem 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 /* 進み具合のバー */
 .progress {
   display: flex;

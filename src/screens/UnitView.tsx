@@ -19,7 +19,10 @@ import {
   createLog,
   deleteLog,
   listLogs,
+  sortThreadsByPage,
+  LOG_ORDER_LABEL,
   type LogEntry,
+  type LogOrder,
 } from '../repository/logs'
 import { signAttachments } from '../repository/attachments'
 import { addMark, listMyMarks, removeMark } from '../repository/marks'
@@ -70,6 +73,15 @@ export default function UnitView() {
 
   /** 自分がしおりを付けているログのid。共有相手のものは入らない */
   const [markedLogIds, setMarkedLogIds] = useState<Set<string>>(() => new Set())
+
+  /**
+   * 記録の並べ方。
+   *
+   * 既定は投稿順。輪講中は「さっきの発言が上」が正しい。
+   * 後から読み返すときはページ順にする。個人の見え方なので
+   * データベースには保存しない。
+   */
+  const [logOrder, setLogOrder] = useState<LogOrder>('posted')
 
   /** 回の画面からその場で書く分。返信とは別に持つ（同時に開けるため） */
   const [quickBody, setQuickBody] = useState('')
@@ -136,7 +148,21 @@ export default function UnitView() {
   const members = state.status === 'ok' ? state.members : []
   const logs = state.status === 'ok' ? state.logs : NO_LOGS
 
-  const threads = useMemo(() => buildThreads(logs), [logs])
+  const postedThreads = useMemo(() => buildThreads(logs), [logs])
+
+  const threads = useMemo(
+    () =>
+      logOrder === 'page' ? sortThreadsByPage(postedThreads) : postedThreads,
+    [postedThreads, logOrder],
+  )
+
+  /** ページ順のとき、ここから先はページが未記入という区切りを出す */
+  const firstWithoutPageId =
+    logOrder === 'page'
+      ? (threads.find(
+          (t) => t.root.pageStart === null && t.root.pageEnd === null,
+        )?.root.id ?? null)
+      : null
 
   // 添付のURLはログの取得とは別に作る。期限付きなので保存できず、
   // ログを読み直すたびに発行し直す必要がある
@@ -618,6 +644,27 @@ export default function UnitView() {
 
           {logError && <p className="screen-error">{logError}</p>}
 
+          {/* 並べ方の切り替え。記録が1件でも意味があるので常に出す */}
+          {threads.length > 0 && (
+            <div className="status-choice log-order-choice">
+              {(['posted', 'page'] as LogOrder[]).map((order) => (
+                <button
+                  key={order}
+                  type="button"
+                  className={
+                    logOrder === order
+                      ? 'status-button selected'
+                      : 'status-button'
+                  }
+                  aria-pressed={logOrder === order}
+                  onClick={() => setLogOrder(order)}
+                >
+                  {LOG_ORDER_LABEL[order]}
+                </button>
+              ))}
+            </div>
+          )}
+
           {threads.length === 0 ? (
             <p className="empty-state">
               {canEdit
@@ -637,6 +684,11 @@ export default function UnitView() {
 
                 return (
                   <li key={thread.root.id}>
+                    {thread.root.id === firstWithoutPageId && (
+                      <p className="log-group-divider">
+                        ここから下はページが未記入
+                      </p>
+                    )}
                     <LogCard
                       log={thread.root}
                       authorName={nameOf(thread.root.authorId)}

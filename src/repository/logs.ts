@@ -133,6 +133,53 @@ export function buildThreads(logs: LogEntry[]): LogThread[] {
   }))
 }
 
+/** 記録一覧の並べ方 */
+export type LogOrder = 'posted' | 'page'
+
+export const LOG_ORDER_LABEL: Record<LogOrder, string> = {
+  posted: '投稿順',
+  page: 'ページ順',
+}
+
+/**
+ * スレッドをページ順に並べ替える。
+ *
+ * **束のまま動かす。** 返信は本文だけで投稿できる（#61）ためページを
+ * 持たない。平らに並べ替えると親と返信が離れて会話が切れる。
+ * この画面の会話は返信で行われるので、順序は親のページだけで決める。
+ *
+ * ページが未記入のスレッドは最後にまとめる。ページを入れていない記録が
+ * 先頭に来ると、読み返しの手がかりにならないため。
+ *
+ * 同じページの中は投稿の古い順。読み返すときは書かれた順に読みたい。
+ *
+ * データ取得を伴わない純粋な関数にしてある。
+ */
+export function sortThreadsByPage(threads: LogThread[]): LogThread[] {
+  const withPage: LogThread[] = []
+  const withoutPage: LogThread[] = []
+
+  for (const thread of threads) {
+    if (thread.root.pageStart === null && thread.root.pageEnd === null) {
+      withoutPage.push(thread)
+    } else {
+      withPage.push(thread)
+    }
+  }
+
+  withPage.sort((a, b) => {
+    // 片方しか入っていないこともあるので、始点が無ければ終点で見る
+    const pageOf = (t: LogThread) => t.root.pageStart ?? t.root.pageEnd ?? 0
+    return (
+      pageOf(a) - pageOf(b) || a.root.createdAt.localeCompare(b.root.createdAt)
+    )
+  })
+
+  withoutPage.sort((a, b) => a.root.createdAt.localeCompare(b.root.createdAt))
+
+  return [...withPage, ...withoutPage]
+}
+
 /**
  * その回のログを新しい順に返す。返信も含めて平らに返す。
  * スレッドの形に組み直すのは buildThreads の役目。
