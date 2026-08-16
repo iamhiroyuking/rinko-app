@@ -91,6 +91,9 @@ export default function UnitView() {
    * その場で書いたものはページを持たない。あとでまとめて埋めるための欄。
    * 編集画面へ往復すると1件ごとに画面が変わって終わらない。
    */
+  /** 投稿した直後の記録。描画が終わってからそこまで運ぶ */
+  const [newLogId, setNewLogId] = useState<string | null>(null)
+
   const [pagingLogId, setPagingLogId] = useState<string | null>(null)
   const [pagingStart, setPagingStart] = useState('')
   const [pagingEnd, setPagingEnd] = useState('')
@@ -203,6 +206,16 @@ export default function UnitView() {
       cancelled = true
     }
   }, [logs])
+
+  // 投稿した記録まで運ぶ。検索から飛んできたときと同じで、
+  // 描画が終わってからでないと要素が無い
+  useEffect(() => {
+    if (!newLogId) return
+    const element = document.getElementById(`log-${newLogId}`)
+    setNewLogId(null)
+    // 自分が今書いたものなので、滑らかに動かす必要はない。すぐ見せる
+    element?.scrollIntoView({ block: 'center', behavior: 'auto' })
+  }, [logs, newLogId])
 
   // しおりはログとは別に取る。個人のもので、ログ本体には持たせていない
   useEffect(() => {
@@ -488,12 +501,18 @@ export default function UnitView() {
     setQuickError(null)
     setQuickBusy(true)
     try {
-      await createLog({ unitId, type: 'none', body })
+      const created = await createLog({ unitId, type: 'none', body })
       const refreshed = await listLogs(unitId)
       setState((prev) =>
         prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
       )
       setQuickBody('')
+
+      // 書いたものが見える位置にあるとは限らない。ページ順のときは
+      // ページを持たない新しい記録が下の方へ入る。
+      // 実際に運ぶのは描画のあと（下の useEffect）。ここで直接
+      // 探しても、まだ要素が無い
+      setNewLogId(created)
     } catch (caught: unknown) {
       setQuickError(errorMessage(caught))
     } finally {
@@ -710,6 +729,7 @@ export default function UnitView() {
               onSubmit={submitQuickPost}
               busy={quickBusy}
               error={quickError}
+              compact
             />
           )}
 
