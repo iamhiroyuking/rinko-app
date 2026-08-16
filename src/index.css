@@ -148,13 +148,21 @@ body {
   align-items: center;
 }
 
+/*
+ * ブロックの間隔。
+ *
+ * 広い画面では本文の幅を広げない方針（#80）なので、空き方は縦の
+ * 間隔で決まる。空けすぎると1画面に入る記録が減り、読む画面なのに
+ * スクロールが増える。指で押す物の大きさは各要素の min-height で
+ * 確保してあるので、ここを詰めても押しにくくはならない。
+ */
 .screen-body {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 1.25rem 1rem 3rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .screen-heading {
@@ -494,7 +502,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  margin-top: 0.45rem;
+  margin-top: 0.3rem;
 }
 
 .tag-chip {
@@ -538,17 +546,17 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.35rem;
+  margin-top: 0.1rem;
 }
 
 .log-action-button {
   padding: 0;
-  min-height: 2rem;
+  min-height: 1.9rem;
   font-size: 0.8125rem;
 }
 
 .log-action-link {
-  min-height: 2rem;
+  min-height: 1.9rem;
   display: inline-flex;
   align-items: center;
   color: var(--muted);
@@ -593,7 +601,7 @@ body {
 }
 
 .log-card {
-  padding: 0.7rem 0.85rem;
+  padding: 0.6rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 0.6rem;
 }
@@ -720,13 +728,13 @@ mark {
 }
 
 .log-title {
-  margin: 0.35rem 0 0;
+  margin: 0.2rem 0 0;
   font-size: 0.9375rem;
   font-weight: 700;
 }
 
 .log-body {
-  margin: 0.25rem 0 0;
+  margin: 0.15rem 0 0;
   font-size: 0.9375rem;
   white-space: pre-wrap;
   overflow-wrap: break-word;
