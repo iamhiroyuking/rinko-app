@@ -990,16 +990,17 @@ button.unit-state-summary:hover {
  * 目標は警告ではないので、面の色を落ち着かせて左の線で示す形にした。
  */
 .objective-card {
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.4rem;
   border-left: 3px solid var(--accent);
   background: var(--surface-2);
   color: var(--fg);
   font-size: 0.875rem;
 }
 
+/* 見出しは行を分けず、本文と同じ行に置く。1行で済むものに2行使わない */
 .objective-label {
-  display: block;
+  margin-right: 0.4rem;
   color: var(--muted);
   font-size: 0.6875rem;
   font-weight: 700;

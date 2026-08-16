@@ -447,7 +447,6 @@ export default function UnitView() {
   return (
     <ScreenFrame
       title={unit ? `第${unit.order}回　${unit.title}` : '回ごとの記録'}
-      description="新しい記録が上に並びます。返信は記録の下に古い順で並びます。"
       backTo={`/books/${bookId}/units`}
       primaryAction={
         unit && canEdit
