@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import { useSession } from '../auth/SessionContext'
 import { signOut } from '../repository/auth'
 import { getMyProfile, type Profile } from '../repository/profiles'
 import {
+  countShelfBooks,
   listShelfBooks,
   SHELF_STATUS_LABEL,
   SHELF_STATUSES,
@@ -26,6 +27,16 @@ const EMPTY_MESSAGE: Record<ShelfStatus, string> = {
   finished: '読み終えた教材はまだありません。',
 }
 
+/** 本棚の主役。ここを開くのがほとんどなので、既定にして操作を挟まない */
+const MAIN_SHELF: ShelfStatus = 'reading'
+
+/** 主役以外。控えめな導線から見に行く */
+const OTHER_SHELVES = SHELF_STATUSES.filter((status) => status !== MAIN_SHELF)
+
+function isShelfStatus(value: string | null): value is ShelfStatus {
+  return SHELF_STATUSES.some((status) => status === value)
+}
+
 export default function HomeView() {
   const { session } = useSession()
   const navigate = useNavigate()
@@ -33,7 +44,21 @@ export default function HomeView() {
   /** undefined は「まだ取得していない」。null と分けないと、読み込み中に
    *  「プロフィールが見つかりません」が一瞬出てしまう */
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
-  const [shelfStatus, setShelfStatus] = useState<ShelfStatus>('reading')
+  const [searchParams] = useSearchParams()
+
+  /**
+   * 見ている本棚。URLに持たせているので、戻るボタンで戻れる。
+   * 知らない値が来たら主役に倒す。
+   */
+  const shelfParam = searchParams.get('shelf')
+  const shelfStatus: ShelfStatus = isShelfStatus(shelfParam)
+    ? shelfParam
+    : MAIN_SHELF
+
+  /** 主役以外の冊数。押す前に0冊だと分かるようにする */
+  const [otherCounts, setOtherCounts] = useState<Map<ShelfStatus, number>>(
+    () => new Map(),
+  )
   /** 表紙のパス → 期限付きURL。非公開バケットなので表示のたびに要る */
   const [coverUrls, setCoverUrls] = useState<Map<string, string | null>>(
     () => new Map(),
@@ -82,6 +107,28 @@ export default function HomeView() {
     }
   }, [state])
 
+  // 冊数は控えめな導線に添えるだけなので、教材の取得とは分けている
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+
+    Promise.all(
+      OTHER_SHELVES.map(
+        async (status) => [status, await countShelfBooks(status)] as const,
+      ),
+    )
+      .then((entries) => {
+        if (!cancelled) setOtherCounts(new Map(entries))
+      })
+      .catch(() => {
+        // 冊数が出ないだけ。導線そのものは出す
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, shelfStatus])
+
   // プロフィールは切り替えても変わらないので、教材の取得とは分けている。
   // 一緒にすると、タブを押すたびに同じ問い合わせを繰り返すことになる
   useEffect(() => {
@@ -116,31 +163,27 @@ export default function HomeView() {
         </button>
       }
       primaryAction={{ label: '＋ 教材を追加', to: '/books/new' }}
-      secondaryLinks={[{ label: 'ゴミ箱', to: '/trash' }]}
+      secondaryLinks={[
+        // 主役の本棚にいるときだけ、他の棚への入り口を出す。
+        // 控えめにはするが辿れなくはしない（#41 で「学習完了にすると
+        // 本棚から消えて戻れない」を実際に踏んでいる）
+        ...(shelfStatus === MAIN_SHELF
+          ? OTHER_SHELVES.map((status) => ({
+              label: `${SHELF_STATUS_LABEL[status]}の教材（${otherCounts.get(status) ?? 0}）`,
+              to: `/?shelf=${status}`,
+            }))
+          : [
+              {
+                label: `${SHELF_STATUS_LABEL[MAIN_SHELF]}の教材に戻る`,
+                to: '/',
+              },
+            ]),
+        { label: 'ゴミ箱', to: '/trash' },
+      ]}
       footNote={
         profile ? `${profile.display_name} としてログイン中` : undefined
       }
     >
-      {/* 回のステータス選択と同じ見た目にしている。押すと本棚の中身が
-          入れ替わるだけで、教材そのものは変わらない */}
-      <div className="status-choice">
-        {SHELF_STATUSES.map((candidate) => (
-          <button
-            key={candidate}
-            type="button"
-            className={
-              shelfStatus === candidate
-                ? 'status-button selected'
-                : 'status-button'
-            }
-            aria-pressed={shelfStatus === candidate}
-            onClick={() => setShelfStatus(candidate)}
-          >
-            {SHELF_STATUS_LABEL[candidate]}
-          </button>
-        ))}
-      </div>
-
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>
       )}
