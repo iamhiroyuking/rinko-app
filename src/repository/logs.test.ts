@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildThreads, formatPageRange, type LogEntry } from './logs'
+import {
+  buildThreads,
+  formatPageRange,
+  sortThreadsByPage,
+  type LogEntry,
+} from './logs'
 
 function log(
   id: string,
@@ -77,5 +82,68 @@ describe('formatPageRange', () => {
 
   it('同じページなら1つだけ出す', () => {
     expect(formatPageRange(47, 47)).toBe('p.47')
+  })
+})
+
+/**
+ * ページ順の並べ替え。
+ *
+ * 返信はページを持たないので、平らに並べ替えると会話が切れる。
+ * 束のまま動かすことをここで固定する。
+ */
+describe('sortThreadsByPage', () => {
+  function thread(
+    id: string,
+    pageStart: number | null,
+    createdAt: string,
+    replies: LogEntry[] = [],
+    pageEnd: number | null = null,
+  ) {
+    const root = log(id, createdAt)
+    return { root: { ...root, pageStart, pageEnd }, replies }
+  }
+
+  it('ページの小さい順に並ぶ', () => {
+    const sorted = sortThreadsByPage([
+      thread('p50', 50, '2026-08-01T00:00:00Z'),
+      thread('p10', 10, '2026-08-02T00:00:00Z'),
+      thread('p30', 30, '2026-08-03T00:00:00Z'),
+    ])
+    expect(sorted.map((t) => t.root.id)).toEqual(['p10', 'p30', 'p50'])
+  })
+
+  it('ページが未記入のものは最後にまとめる', () => {
+    const sorted = sortThreadsByPage([
+      thread('なし1', null, '2026-08-01T00:00:00Z'),
+      thread('p20', 20, '2026-08-02T00:00:00Z'),
+      thread('なし2', null, '2026-08-03T00:00:00Z'),
+    ])
+    expect(sorted.map((t) => t.root.id)).toEqual(['p20', 'なし1', 'なし2'])
+  })
+
+  it('同じページの中は投稿の古い順', () => {
+    const sorted = sortThreadsByPage([
+      thread('新しい', 10, '2026-08-05T00:00:00Z'),
+      thread('古い', 10, '2026-08-01T00:00:00Z'),
+    ])
+    expect(sorted.map((t) => t.root.id)).toEqual(['古い', '新しい'])
+  })
+
+  it('始点が無ければ終点で並べる', () => {
+    const sorted = sortThreadsByPage([
+      thread('終点60', null, '2026-08-01T00:00:00Z', [], 60),
+      thread('始点20', 20, '2026-08-02T00:00:00Z'),
+    ])
+    expect(sorted.map((t) => t.root.id)).toEqual(['始点20', '終点60'])
+  })
+
+  it('返信は親から離れない（束のまま動く）', () => {
+    const reply = log('返信', '2026-08-09T00:00:00Z', 'p40')
+    const sorted = sortThreadsByPage([
+      thread('p40', 40, '2026-08-01T00:00:00Z', [reply]),
+      thread('p10', 10, '2026-08-02T00:00:00Z'),
+    ])
+    expect(sorted.map((t) => t.root.id)).toEqual(['p10', 'p40'])
+    expect(sorted[1].replies.map((r) => r.id)).toEqual(['返信'])
   })
 })
