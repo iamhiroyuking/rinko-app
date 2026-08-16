@@ -909,16 +909,25 @@ mark {
   color: var(--done);
 }
 
+/*
+ * 「この回で学ぶこと」「全体を通しての目標」。
+ *
+ * 以前は警告色（--warn）を使っていた。緑の画面では馴染んでいたが、
+ * 青にすると琥珀色の帯だけが浮き、注意書きに見えてしまう。
+ * 目標は警告ではないので、面の色を落ち着かせて左の線で示す形にした。
+ */
 .objective-card {
   padding: 0.7rem 0.85rem;
   border-radius: 0.6rem;
-  background: var(--warn-bg);
-  color: var(--warn);
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  color: var(--fg);
   font-size: 0.875rem;
 }
 
 .objective-label {
   display: block;
+  color: var(--muted);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
