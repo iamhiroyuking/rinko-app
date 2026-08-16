@@ -135,6 +135,14 @@ export async function removeUnitImages(unitId: string): Promise<void> {
   if (removeError) throw removeError
 }
 
+/** 指定したパスをストレージから消す。表紙の差し替えなどで使う */
+export async function removeStoragePaths(paths: string[]): Promise<void> {
+  if (paths.length === 0) return
+
+  const { error } = await supabase.storage.from(BUCKET).remove(paths)
+  if (error) throw error
+}
+
 /**
  * その教材の画像をまとめて消す。
  *

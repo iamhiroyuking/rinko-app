@@ -40,6 +40,8 @@ export default function App() {
                 ログイン画面へ送られ、ログイン後にここへ戻ってくる */}
             <Route path="/join/:token" element={<JoinBookView />} />
             <Route path="/books/:bookId" element={<BookSummaryView />} />
+            {/* 追加と同じ画面。bookId があるかどうかで新規と編集を分けている */}
+            <Route path="/books/:bookId/edit" element={<AddBookView />} />
             <Route path="/books/:bookId/units" element={<SeminarView />} />
             <Route
               path="/books/:bookId/units/new"
