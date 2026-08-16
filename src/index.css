@@ -597,6 +597,13 @@ body {
   color: var(--muted);
 }
 
+.reply-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .reply-form textarea {
   font-family: inherit;
   font-size: 0.9375rem;
