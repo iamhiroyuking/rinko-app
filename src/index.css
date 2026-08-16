@@ -76,23 +76,24 @@ body {
  * ------------------------------------------------------------------------- */
 
 /*
- * 内容に合わせて器の幅を変える。
+ * 幅は2つ持っている。
  *
- * 既定は文章を読む幅。1行が長くなると目が行を戻せなくなるので、
- * 画面が広くても本文は広げない。
- * 一覧・並びの画面（本棚・回のリスト）だけ screen-wide にして、
- * 横に並べられるものを並べる。
+ * --app-width は画面の枠。ヘッダーはこちらを使う。**どの画面でも同じ**。
+ * 本文に合わせて変えると、画面を移るたびにヘッダーごと幅が変わり、
+ * 「戻る」の位置が飛ぶ。揃えるべきは本文との左端ではなく画面同士だった。
  *
- * ヘッダーと本文で同じ変数を使っている。別々に持つと、片方だけ
- * 広げたときに「戻る」と本文の左端がずれる。
+ * --content-width は本文の幅。内容によって変える。
+ * 文章を読む画面は狭いまま（1行が長くなると目が行を戻せなくなる）、
+ * 一覧・並びの画面だけ広くする。
  */
 .screen {
+  --app-width: 72rem;
   --content-width: 40rem;
   min-height: 100vh;
 }
 
 .screen-wide {
-  --content-width: 72rem;
+  --content-width: var(--app-width);
 }
 
 .app-header {
@@ -104,7 +105,7 @@ body {
 }
 
 .app-header-inner {
-  max-width: var(--content-width);
+  max-width: var(--app-width);
   margin: 0 auto;
   padding: 0 0.5rem;
   min-height: 3rem;
@@ -795,6 +796,28 @@ button.unit-state-summary:hover {
   padding: 0.85rem;
   border: 1px solid var(--line);
   border-radius: 0.6rem;
+}
+
+/*
+ * パネルを並べる。
+ *
+ * 教材の概要は文章ではなくパネルの集まりなので、広い画面では
+ * 横に並べる。縦に積むだけだと右側が空いたまま下へ伸び、
+ * 下のパネルを見るのにスクロールが要る。
+ *
+ * 狭い画面では1列。並べ方だけが変わり、中身は変えない。
+ */
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .panel-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* ページを後から入れる欄。記録の下に開く */

@@ -221,6 +221,7 @@ export default function BookSummaryView() {
     <ScreenFrame
       title={book?.title ?? '教材の概要'}
       description="次にやる回と、この教材でのこれまで。"
+      width="wide"
       backTo="/"
       primaryAction={
         book
@@ -256,175 +257,182 @@ export default function BookSummaryView() {
             </div>
           )}
 
-          <section className="panel">
-            <h2 className="panel-title">次にやる回</h2>
-            {nextUnit ? (
-              <>
-                {/* 次にやる回が分かっても飛べないと意味がないので、
-                    タイトルそのものを入り口にしている */}
-                <Link
-                  className="next-unit-title"
-                  to={`/books/${bookId}/units/${nextUnit.id}`}
-                >
-                  第{nextUnit.order}回　{nextUnit.title}
-                </Link>
-                <p className="panel-note">
-                  {memberNameOf(nextUnit.presenterId)} ・{' '}
-                  {nextUnit.scheduledDate ?? '日程未定'}
-                </p>
-                {formatUnitPageRange(nextUnit.pageFrom, nextUnit.pageTo) && (
-                  <p className="panel-note">
-                    <span className="unit-pages">
-                      {formatUnitPageRange(nextUnit.pageFrom, nextUnit.pageTo)}
-                    </span>
-                  </p>
-                )}
-                {nextUnit.startNote && (
-                  <p className="panel-note">開始箇所: {nextUnit.startNote}</p>
-                )}
-              </>
-            ) : (
-              <p className="panel-note">
-                {state.status === 'ok' && state.unitCount === 0
-                  ? 'まだ回がありません。「学習を開始する」から追加してください。'
-                  : 'すべての回が完了しています。'}
-              </p>
-            )}
-          </section>
-
-          <section className="panel">
-            <h2 className="panel-title">この教材の状況</h2>
-            <div className="field">
-              <label htmlFor="shelfStatus">本棚でのステータス</label>
-              <select
-                id="shelfStatus"
-                value={shelfEntry?.shelfStatus ?? 'reading'}
-                onChange={(e) => handleShelfStatusChange(e.target.value)}
-                disabled={shelfBusy || !shelfEntry}
-              >
-                {SHELF_STATUSES.map((shelfStatus) => (
-                  <option key={shelfStatus} value={shelfStatus}>
-                    {SHELF_STATUS_LABEL[shelfStatus]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="panel-note">
-              自分の本棚での並べ方です。変えても共有している相手の本棚は変わりません。
-              本棚には「学習中」の教材が並びます。
-            </p>
-            <dl className="stat-list">
-              <div className="stat">
-                <dt>学習開始日</dt>
-                <dd>
-                  {shelfEntry ? formatJoinedAt(shelfEntry.joinedAt) : '—'}
-                </dd>
-              </div>
-              <div className="stat">
-                <dt>記録の数</dt>
-                <dd>{state.status === 'ok' ? `${state.logCount}件` : '—'}</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="panel">
-            <h2 className="panel-title">参加者（{members.length}人）</h2>
-            <ul className="member-list">
-              {members.map((member) => (
-                <li key={member.userId}>{member.displayName}</li>
-              ))}
-            </ul>
-          </section>
-
-          {/* 共有リンクを配れるのは編集者だけ。閲覧者が他人を招けると、
-              渡された権限より広いことができてしまう */}
-          {canEdit && (
+          <div className="panel-grid">
             <section className="panel">
-              <h2 className="panel-title">共有</h2>
-
-              {/* 権限ごとに別のリンクにしている。用途が違うので混ざると困る */}
-              <div className="status-choice">
-                {INVITE_ROLES.map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    className={
-                      inviteRole === role
-                        ? 'status-button selected'
-                        : 'status-button'
-                    }
-                    aria-pressed={inviteRole === role}
-                    onClick={() => setInviteRole(role)}
-                  >
-                    {INVITE_ROLE_LABEL[role]}
-                  </button>
-                ))}
-              </div>
-
-              {shownToken ? (
+              <h2 className="panel-title">次にやる回</h2>
+              {nextUnit ? (
                 <>
+                  {/* 次にやる回が分かっても飛べないと意味がないので、
+                    タイトルそのものを入り口にしている */}
+                  <Link
+                    className="next-unit-title"
+                    to={`/books/${bookId}/units/${nextUnit.id}`}
+                  >
+                    第{nextUnit.order}回　{nextUnit.title}
+                  </Link>
                   <p className="panel-note">
-                    {inviteRole === 'editor'
-                      ? 'このリンクを渡すと、相手も同じ教材に書き込めるようになります。'
-                      : 'このリンクを渡すと、相手は読むことだけできます。書き込みはできません。'}
+                    {memberNameOf(nextUnit.presenterId)} ・{' '}
+                    {nextUnit.scheduledDate ?? '日程未定'}
                   </p>
-                  <code className="invite-url">{inviteUrlOf(shownToken)}</code>
-                  <div className="button-row">
+                  {formatUnitPageRange(nextUnit.pageFrom, nextUnit.pageTo) && (
+                    <p className="panel-note">
+                      <span className="unit-pages">
+                        {formatUnitPageRange(
+                          nextUnit.pageFrom,
+                          nextUnit.pageTo,
+                        )}
+                      </span>
+                    </p>
+                  )}
+                  {nextUnit.startNote && (
+                    <p className="panel-note">開始箇所: {nextUnit.startNote}</p>
+                  )}
+                </>
+              ) : (
+                <p className="panel-note">
+                  {state.status === 'ok' && state.unitCount === 0
+                    ? 'まだ回がありません。「学習を開始する」から追加してください。'
+                    : 'すべての回が完了しています。'}
+                </p>
+              )}
+            </section>
+
+            <section className="panel">
+              <h2 className="panel-title">この教材の状況</h2>
+              <div className="field">
+                <label htmlFor="shelfStatus">本棚でのステータス</label>
+                <select
+                  id="shelfStatus"
+                  value={shelfEntry?.shelfStatus ?? 'reading'}
+                  onChange={(e) => handleShelfStatusChange(e.target.value)}
+                  disabled={shelfBusy || !shelfEntry}
+                >
+                  {SHELF_STATUSES.map((shelfStatus) => (
+                    <option key={shelfStatus} value={shelfStatus}>
+                      {SHELF_STATUS_LABEL[shelfStatus]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="panel-note">
+                自分の本棚での並べ方です。変えても共有している相手の本棚は変わりません。
+                本棚には「学習中」の教材が並びます。
+              </p>
+              <dl className="stat-list">
+                <div className="stat">
+                  <dt>学習開始日</dt>
+                  <dd>
+                    {shelfEntry ? formatJoinedAt(shelfEntry.joinedAt) : '—'}
+                  </dd>
+                </div>
+                <div className="stat">
+                  <dt>記録の数</dt>
+                  <dd>{state.status === 'ok' ? `${state.logCount}件` : '—'}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className="panel">
+              <h2 className="panel-title">参加者（{members.length}人）</h2>
+              <ul className="member-list">
+                {members.map((member) => (
+                  <li key={member.userId}>{member.displayName}</li>
+                ))}
+              </ul>
+            </section>
+
+            {/* 共有リンクを配れるのは編集者だけ。閲覧者が他人を招けると、
+              渡された権限より広いことができてしまう */}
+            {canEdit && (
+              <section className="panel">
+                <h2 className="panel-title">共有</h2>
+
+                {/* 権限ごとに別のリンクにしている。用途が違うので混ざると困る */}
+                <div className="status-choice">
+                  {INVITE_ROLES.map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      className={
+                        inviteRole === role
+                          ? 'status-button selected'
+                          : 'status-button'
+                      }
+                      aria-pressed={inviteRole === role}
+                      onClick={() => setInviteRole(role)}
+                    >
+                      {INVITE_ROLE_LABEL[role]}
+                    </button>
+                  ))}
+                </div>
+
+                {shownToken ? (
+                  <>
+                    <p className="panel-note">
+                      {inviteRole === 'editor'
+                        ? 'このリンクを渡すと、相手も同じ教材に書き込めるようになります。'
+                        : 'このリンクを渡すと、相手は読むことだけできます。書き込みはできません。'}
+                    </p>
+                    <code className="invite-url">
+                      {inviteUrlOf(shownToken)}
+                    </code>
+                    <div className="button-row">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={handleCopy}
+                      >
+                        {copied ? 'コピーしました' : 'リンクをコピー'}
+                      </button>
+                      <button
+                        type="button"
+                        className="quiet-button"
+                        onClick={handleRevoke}
+                        disabled={revoking}
+                      >
+                        {revoking
+                          ? '無効にしています…'
+                          : 'このリンクを無効にする'}
+                      </button>
+                    </div>
+                    <p className="panel-note">
+                      無効にすると、このリンクからは参加できなくなります。既に参加している人はそのまま残ります。
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="panel-note">
+                      {INVITE_ROLE_LABEL[inviteRole]}
+                      リンクはまだ発行していません。
+                    </p>
                     <button
                       type="button"
                       className="secondary-button"
-                      onClick={handleCopy}
+                      onClick={handleIssue}
+                      disabled={issuing}
                     >
-                      {copied ? 'コピーしました' : 'リンクをコピー'}
+                      {issuing ? '発行中…' : '共有リンクを発行'}
                     </button>
-                    <button
-                      type="button"
-                      className="quiet-button"
-                      onClick={handleRevoke}
-                      disabled={revoking}
-                    >
-                      {revoking
-                        ? '無効にしています…'
-                        : 'このリンクを無効にする'}
-                    </button>
-                  </div>
-                  <p className="panel-note">
-                    無効にすると、このリンクからは参加できなくなります。既に参加している人はそのまま残ります。
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="panel-note">
-                    {INVITE_ROLE_LABEL[inviteRole]}
-                    リンクはまだ発行していません。
-                  </p>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={handleIssue}
-                    disabled={issuing}
-                  >
-                    {issuing ? '発行中…' : '共有リンクを発行'}
-                  </button>
-                </>
-              )}
-            </section>
-          )}
+                  </>
+                )}
+              </section>
+            )}
 
-          <section className="panel">
-            <h2 className="panel-title">この教材を消す</h2>
-            <p className="panel-note">
-              自分の本棚から消えます。共有している相手には残ります。ゴミ箱から復元できます。
-            </p>
-            <button
-              type="button"
-              className="danger-button"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? '処理中…' : '本棚から消す'}
-            </button>
-          </section>
+            <section className="panel">
+              <h2 className="panel-title">この教材を消す</h2>
+              <p className="panel-note">
+                自分の本棚から消えます。共有している相手には残ります。ゴミ箱から復元できます。
+              </p>
+              <button
+                type="button"
+                className="danger-button"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? '処理中…' : '本棚から消す'}
+              </button>
+            </section>
+          </div>
 
           {actionError && <p className="screen-error">{actionError}</p>}
         </>
