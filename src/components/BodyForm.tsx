@@ -1,3 +1,4 @@
+import { useState } from 'react'
 /**
  * 本文だけを書いて送るフォーム。
  *
@@ -25,6 +26,14 @@ type Props = {
   onCancel?: () => void
   autoFocus?: boolean
   placeholder?: string
+  /**
+   * 普段は1行にして、触れたら広がる形にするか。
+   *
+   * 読みに来ただけのときに入力欄が場所を取るのを避ける。
+   * 「開く」ボタンを挟むとタップが1回増える。輪講中にその場で書く
+   * ための入力欄（#61）なので、そのコストは軽くない。
+   */
+  compact?: boolean
 }
 
 export default function BodyForm({
@@ -40,7 +49,13 @@ export default function BodyForm({
   onCancel,
   autoFocus = false,
   placeholder,
+  compact = false,
 }: Props) {
+  const [focused, setFocused] = useState(false)
+
+  // 書きかけを畳むと消えたように見えるので、中身があれば開いたままにする
+  const expanded = !compact || focused || value.trim() !== ''
+
   return (
     <form className="reply-form" onSubmit={onSubmit}>
       <label className="reply-label" htmlFor={fieldId}>
@@ -50,13 +65,15 @@ export default function BodyForm({
         id={fieldId}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        rows={3}
+        rows={expanded ? 3 : 1}
         required
         autoFocus={autoFocus}
         placeholder={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
       {error && <p className="screen-error">{error}</p>}
-      <div className="button-row">
+      <div className="button-row" hidden={!expanded}>
         {onCancel && (
           <button type="button" className="quiet-button" onClick={onCancel}>
             キャンセル
