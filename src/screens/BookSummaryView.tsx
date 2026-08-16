@@ -227,6 +227,13 @@ export default function BookSummaryView() {
           ? { label: '学習を開始する', to: `/books/${bookId}/units` }
           : undefined
       }
+      headerAction={
+        book && canEdit ? (
+          <Link className="log-action-link" to={`/books/${bookId}/edit`}>
+            編集
+          </Link>
+        ) : undefined
+      }
     >
       {state.status === 'loading' && (
         <p className="screen-param">読み込み中…</p>

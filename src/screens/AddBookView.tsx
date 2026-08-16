@@ -1,15 +1,29 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
-import { createBook, setBookCoverPath } from '../repository/books'
-import { uploadBookCover } from '../repository/attachments'
+import {
+  createBook,
+  getBook,
+  replaceBookCover,
+  setBookCoverPath,
+  updateBook,
+} from '../repository/books'
+import { signPaths, uploadBookCover } from '../repository/attachments'
 import { extractToken, joinBookWithToken } from '../repository/invites'
 import { errorMessage } from '../lib/errorMessage'
 import { ACCEPTED_TYPES } from '../lib/image'
 
 type Mode = 'create' | 'join'
 
+/**
+ * 教材の追加・参加・編集。
+ *
+ * URLに bookId があれば編集。AddLogView / CreateUnitView と同じ考え方で、
+ * 中身がほぼ同じフォームを2つ持たないようにしている。
+ */
 export default function AddBookView() {
+  const { bookId } = useParams()
+  const isEditing = Boolean(bookId)
   const navigate = useNavigate()
   const [mode, setMode] = useState<Mode>('create')
   const [title, setTitle] = useState('')
@@ -22,6 +36,49 @@ export default function AddBookView() {
 
   /** 選んだ表紙を出すための一時的なURL。選び直しと離脱で取り消す */
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  /** 編集のとき、今ついている表紙 */
+  const [currentCoverPath, setCurrentCoverPath] = useState<string | null>(null)
+  const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null)
+  /** 表紙を外す指示。差し替えとは別に持つ */
+  const [removeCover, setRemoveCover] = useState(false)
+  const [loading, setLoading] = useState(isEditing)
+
+  useEffect(() => {
+    if (!bookId) return
+    let cancelled = false
+
+    getBook(bookId)
+      .then(async (book) => {
+        if (cancelled) return
+        if (!book) {
+          setError('この教材は見つかりませんでした。')
+          setLoading(false)
+          return
+        }
+        setTitle(book.title)
+        setGoal(book.goal ?? '')
+        setCoverImageUrl(book.coverImageUrl ?? '')
+        setCurrentCoverPath(book.coverStoragePath)
+
+        if (book.coverStoragePath) {
+          const urls = await signPaths([book.coverStoragePath])
+          if (!cancelled) {
+            setCurrentCoverUrl(urls.get(book.coverStoragePath) ?? null)
+          }
+        }
+        if (!cancelled) setLoading(false)
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return
+        setError(errorMessage(caught))
+        setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [bookId])
 
   useEffect(() => {
     if (!coverFile) {
@@ -39,6 +96,25 @@ export default function AddBookView() {
     setError(null)
     setBusy(true)
     try {
+      if (bookId) {
+        await updateBook(bookId, {
+          title: title.trim(),
+          goal: goal.trim() || null,
+        })
+
+        // 表紙は「差し替える」「外す」「そのまま」の3通り。
+        // 前の画像を消すのは記録を書き換えたあと（replaceBookCover の中）
+        if (coverFile) {
+          const path = await uploadBookCover(bookId, coverFile)
+          await replaceBookCover(bookId, currentCoverPath, path)
+        } else if (removeCover && currentCoverPath) {
+          await replaceBookCover(bookId, currentCoverPath, null)
+        }
+
+        navigate(`/books/${bookId}`)
+        return
+      }
+
       if (mode === 'create') {
         const bookId = await createBook({
           title: title.trim(),
@@ -75,15 +151,26 @@ export default function AddBookView() {
 
   return (
     <ScreenFrame
-      title={mode === 'create' ? '教材を追加' : '教材に参加'}
-      description={
-        mode === 'create'
-          ? '輪講で使う教材を本棚に並べます。'
-          : '受け取った共有リンクを貼り付けてください。'
+      title={
+        isEditing
+          ? '教材を編集'
+          : mode === 'create'
+            ? '教材を追加'
+            : '教材に参加'
       }
-      backTo="/"
+      description={
+        isEditing
+          ? '書名・目標・表紙を直せます。変更は参加者全員に反映されます。'
+          : mode === 'create'
+            ? '輪講で使う教材を本棚に並べます。'
+            : '受け取った共有リンクを貼り付けてください。'
+      }
+      backTo={isEditing ? `/books/${bookId}` : '/'}
     >
-      <div className="tabs">
+      {loading && <p className="screen-param">読み込み中…</p>}
+
+      {/* 編集では「新しく作る／参加する」の切り替えは要らない */}
+      <div className="tabs" hidden={isEditing}>
         <button
           type="button"
           className={mode === 'create' ? 'tab selected' : 'tab'}
@@ -100,8 +187,8 @@ export default function AddBookView() {
         </button>
       </div>
 
-      <form className="form" onSubmit={handleSubmit}>
-        {mode === 'create' ? (
+      <form className="form" onSubmit={handleSubmit} hidden={loading}>
+        {isEditing || mode === 'create' ? (
           <>
             <div className="field">
               <label htmlFor="title">書名</label>
@@ -144,6 +231,35 @@ export default function AddBookView() {
                   </li>
                 </ul>
               )}
+
+              {/* 今ついている表紙。差し替えないなら触らない */}
+              {isEditing && currentCoverPath && !coverFile && (
+                <>
+                  <ul className="preview-list">
+                    <li className="preview-item">
+                      {currentCoverUrl ? (
+                        <img
+                          className="preview-image"
+                          src={currentCoverUrl}
+                          alt="今の表紙"
+                        />
+                      ) : (
+                        <span className="preview-name">今の表紙</span>
+                      )}
+                      <span className="preview-name">
+                        {removeCover ? '外します' : '今の表紙'}
+                      </span>
+                    </li>
+                  </ul>
+                  <button
+                    type="button"
+                    className="quiet-button log-action-button"
+                    onClick={() => setRemoveCover((on) => !on)}
+                  >
+                    {removeCover ? '外すのをやめる' : '表紙を外す'}
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="field">
@@ -176,13 +292,17 @@ export default function AddBookView() {
         {error && <p className="screen-error">{error}</p>}
 
         <button type="submit" className="primary-button" disabled={busy}>
-          {busy
-            ? mode === 'create'
-              ? '作成中…'
-              : '参加中…'
-            : mode === 'create'
-              ? '作成する'
-              : '参加する'}
+          {isEditing
+            ? busy
+              ? '保存中…'
+              : '保存する'
+            : busy
+              ? mode === 'create'
+                ? '作成中…'
+                : '参加中…'
+              : mode === 'create'
+                ? '作成する'
+                : '参加する'}
         </button>
       </form>
     </ScreenFrame>

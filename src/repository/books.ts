@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { removeBookImages } from './attachments'
+import { removeBookImages, removeStoragePaths } from './attachments'
 import type { Database } from './database.types'
 
 type BookRow = Database['public']['Tables']['books']['Row']
@@ -241,6 +241,54 @@ export async function setBookCoverPath(
     .eq('id', bookId)
 
   if (error) throw error
+}
+
+export type BookEdit = {
+  title: string
+  goal: string | null
+}
+
+/**
+ * 教材の題名と目標を書き換える。
+ *
+ * 権限は編集者。教材は共有されているので、変えると参加者全員の本棚に
+ * 反映される（「追加と編集は全員に同期」の原則どおり）。
+ */
+export async function updateBook(
+  bookId: string,
+  input: BookEdit,
+): Promise<void> {
+  const { error } = await supabase
+    .from('books')
+    .update({ title: input.title, goal: input.goal })
+    .eq('id', bookId)
+
+  if (error) throw error
+}
+
+/**
+ * 表紙を差し替える、または外す。
+ *
+ * **前の画像をストレージから消すのを忘れないこと。** 残すと、どこからも
+ * 辿れないファイルが容量を食い続ける（#53 で実際に踏んだ形）。
+ * 記録を先に書き換えてから消すと、失敗したときに参照だけ失った
+ * ファイルが残るので、順番は「新しいものを置く → 記録を変える → 古いものを消す」。
+ */
+export async function replaceBookCover(
+  bookId: string,
+  previousPath: string | null,
+  nextPath: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('books')
+    .update({ cover_storage_path: nextPath })
+    .eq('id', bookId)
+
+  if (error) throw error
+
+  if (previousPath && previousPath !== nextPath) {
+    await removeStoragePaths([previousPath])
+  }
 }
 
 /**
