@@ -538,14 +538,6 @@ export default function UnitView() {
     <ScreenFrame
       title={unit ? `第${unit.order}回　${unit.title}` : '回ごとの記録'}
       backTo={`/books/${bookId}/units`}
-      primaryAction={
-        unit && canEdit
-          ? {
-              label: '🗨 発言する',
-              to: `/books/${bookId}/units/${unitId}/logs/new`,
-            }
-          : undefined
-      }
       secondaryLinks={[{ label: '記録を検索', to: `/books/${bookId}/search` }]}
     >
       {state.status === 'loading' && (
@@ -614,7 +606,9 @@ export default function UnitView() {
 
           {/* 輪講中に浮かんだことをその場で書けるようにする。
               画面を移ると読んでいた位置を失ううえ、戻る手間もかかる。
-              種別・ページ・タグ・画像を使いたいときは「発言する」へ */}
+              種別・ページ・タグ・画像を使いたいときは隣の入口から
+              AddLogView へ（#100: 記録が増えるほど遠くなる下部固定を廃止し、
+              書く入口をここ1か所にまとめた） */}
           {canEdit && (
             <BodyForm
               label="いま書く"
@@ -628,6 +622,14 @@ export default function UnitView() {
               busy={quickBusy}
               error={quickError}
               compact
+              labelAction={
+                <Link
+                  className="log-action-link"
+                  to={`/books/${bookId}/units/${unitId}/logs/new`}
+                >
+                  種別やページを付けて書く
+                </Link>
+              }
             />
           )}
 

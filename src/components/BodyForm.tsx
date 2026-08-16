@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 /**
  * 本文だけを書いて送るフォーム。
  *
@@ -34,6 +34,8 @@ type Props = {
    * ための入力欄（#61）なので、そのコストは軽くない。
    */
   compact?: boolean
+  /** ラベルの右に添えるもの。「種別やページを付けて書く」への導線など */
+  labelAction?: ReactNode
 }
 
 export default function BodyForm({
@@ -50,6 +52,7 @@ export default function BodyForm({
   autoFocus = false,
   placeholder,
   compact = false,
+  labelAction,
 }: Props) {
   const [focused, setFocused] = useState(false)
 
@@ -58,9 +61,12 @@ export default function BodyForm({
 
   return (
     <form className="reply-form" onSubmit={onSubmit}>
-      <label className="reply-label" htmlFor={fieldId}>
-        {label}
-      </label>
+      <div className="reply-label-row">
+        <label className="reply-label" htmlFor={fieldId}>
+          {label}
+        </label>
+        {labelAction}
+      </div>
       <textarea
         id={fieldId}
         value={value}
