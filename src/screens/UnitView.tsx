@@ -20,6 +20,7 @@ import {
   deleteLog,
   listLogs,
   sortThreadsByPage,
+  updateLogPages,
   LOG_ORDER_LABEL,
   type LogEntry,
   type LogOrder,
@@ -82,6 +83,19 @@ export default function UnitView() {
    * データベースには保存しない。
    */
   const [logOrder, setLogOrder] = useState<LogOrder>('posted')
+
+  /**
+   * ページを入れる欄を開いている記録のid。
+   *
+   * 後から読み返せるようにするには記録にページが要るが、輪講中に
+   * その場で書いたものはページを持たない。あとでまとめて埋めるための欄。
+   * 編集画面へ往復すると1件ごとに画面が変わって終わらない。
+   */
+  const [pagingLogId, setPagingLogId] = useState<string | null>(null)
+  const [pagingStart, setPagingStart] = useState('')
+  const [pagingEnd, setPagingEnd] = useState('')
+  const [pagingBusy, setPagingBusy] = useState(false)
+  const [pagingError, setPagingError] = useState<string | null>(null)
 
   /** 回の画面からその場で書く分。返信とは別に持つ（同時に開けるため） */
   const [quickBody, setQuickBody] = useState('')
@@ -155,6 +169,11 @@ export default function UnitView() {
       logOrder === 'page' ? sortThreadsByPage(postedThreads) : postedThreads,
     [postedThreads, logOrder],
   )
+
+  /** ページが未記入のスレッドの数。あと何件かが分かるように出す */
+  const withoutPageCount = threads.filter(
+    (t) => t.root.pageStart === null && t.root.pageEnd === null,
+  ).length
 
   /** ページ順のとき、ここから先はページが未記入という区切りを出す */
   const firstWithoutPageId =
@@ -369,11 +388,63 @@ export default function UnitView() {
    * 他人の記録を消せてはいけない。押せないよう隠すが、
    * データベース側も投稿者本人しか変更・削除できないようにしてある。
    */
+  function openPaging(log: LogEntry) {
+    setPagingLogId(log.id)
+    setPagingStart(log.pageStart !== null ? String(log.pageStart) : '')
+    setPagingEnd(log.pageEnd !== null ? String(log.pageEnd) : '')
+    setPagingError(null)
+  }
+
+  /** ページだけを入れて保存する。編集画面へ往復させない */
+  async function savePages2(event: React.FormEvent, logId: string) {
+    event.preventDefault()
+
+    const start = toPageNumber(pagingStart)
+    const end = toPageNumber(pagingEnd)
+    const validationError = validatePageRange(start, end)
+    if (validationError) {
+      setPagingError(validationError)
+      return
+    }
+    if (start === null && end === null) {
+      setPagingError('ページを入れてください。')
+      return
+    }
+
+    setPagingError(null)
+    setPagingBusy(true)
+    try {
+      await updateLogPages(logId, start, end)
+      if (!unitId) return
+      const refreshed = await listLogs(unitId)
+      setState((prev) =>
+        prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
+      )
+      setPagingLogId(null)
+    } catch (caught: unknown) {
+      setPagingError(errorMessage(caught))
+    } finally {
+      setPagingBusy(false)
+    }
+  }
+
   function ownLogActions(log: LogEntry, replyCount: number) {
     if (!canEdit) return null
     if (log.authorId !== session?.user.id) return null
+    const needsPage = log.pageStart === null && log.pageEnd === null
     return (
       <>
+        {/* ページ順で読み返せるようにするための整備。
+            ページが無いものにだけ、その場で入れる入口を出す */}
+        {logOrder === 'page' && needsPage && (
+          <button
+            type="button"
+            className="quiet-button log-action-button"
+            onClick={() => openPaging(log)}
+          >
+            ページを入れる
+          </button>
+        )}
         <Link
           className="log-action-link"
           to={`/books/${bookId}/units/${unitId}/logs/${log.id}/edit`}
@@ -686,7 +757,7 @@ export default function UnitView() {
                   <li key={thread.root.id}>
                     {thread.root.id === firstWithoutPageId && (
                       <p className="log-group-divider">
-                        ここから下はページが未記入
+                        ここから下はページが未記入（{withoutPageCount}件）
                       </p>
                     )}
                     <LogCard
@@ -711,6 +782,62 @@ export default function UnitView() {
                             onCancel={() => setReplyingTo(null)}
                             autoFocus
                           />
+                        ) : pagingLogId === thread.root.id ? (
+                          <form
+                            className="paging-form"
+                            onSubmit={(e) => savePages2(e, thread.root.id)}
+                          >
+                            <div className="field-row">
+                              <div className="field">
+                                <label htmlFor={`ps-${thread.root.id}`}>
+                                  開始ページ
+                                </label>
+                                <input
+                                  id={`ps-${thread.root.id}`}
+                                  type="number"
+                                  min={0}
+                                  inputMode="numeric"
+                                  value={pagingStart}
+                                  onChange={(e) =>
+                                    setPagingStart(e.target.value)
+                                  }
+                                  autoFocus
+                                />
+                              </div>
+                              <div className="field">
+                                <label htmlFor={`pe-${thread.root.id}`}>
+                                  終了（任意）
+                                </label>
+                                <input
+                                  id={`pe-${thread.root.id}`}
+                                  type="number"
+                                  min={0}
+                                  inputMode="numeric"
+                                  value={pagingEnd}
+                                  onChange={(e) => setPagingEnd(e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            {pagingError && (
+                              <p className="screen-error">{pagingError}</p>
+                            )}
+                            <div className="button-row">
+                              <button
+                                type="button"
+                                className="quiet-button"
+                                onClick={() => setPagingLogId(null)}
+                              >
+                                やめる
+                              </button>
+                              <button
+                                type="submit"
+                                className="secondary-button"
+                                disabled={pagingBusy}
+                              >
+                                {pagingBusy ? '保存中…' : 'ページを保存'}
+                              </button>
+                            </div>
+                          </form>
                         ) : (
                           <div className="log-actions">
                             {canEdit && (

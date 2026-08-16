@@ -797,6 +797,14 @@ button.unit-state-summary:hover {
   border-radius: 0.6rem;
 }
 
+/* ページを後から入れる欄。記録の下に開く */
+.paging-form {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 /* 並べ方の切り替え。記録の一覧のすぐ上に置く */
 .log-order-choice {
   margin-bottom: -0.5rem;
