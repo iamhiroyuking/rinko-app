@@ -321,6 +321,27 @@ export async function updateLog(logId: string, input: LogEdit): Promise<void> {
 }
 
 /**
+ * ページ範囲だけを書き換える。
+ *
+ * updateLog はタグを付け直すので、ページを入れるだけの用途には重い。
+ * 後からまとめてページを埋めるとき（読み返せるようにする作業）に使う。
+ *
+ * 他人のログは行レベルセキュリティが弾く。押せないよう画面側で隠す。
+ */
+export async function updateLogPages(
+  logId: string,
+  pageStart: number | null,
+  pageEnd: number | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('logs')
+    .update({ page_start: pageStart, page_end: pageEnd })
+    .eq('id', logId)
+
+  if (error) throw error
+}
+
+/**
  * ログに付いているタグを、渡された名前の集合に合わせる。
  *
  * 差分を出さず、いったん全部外してから付け直している。1件のログに
