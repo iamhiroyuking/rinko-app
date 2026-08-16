@@ -334,14 +334,22 @@ body {
   background: var(--surface-2);
 }
 
+/*
+ * 招待リンク。区切りの無い長い文字列なので、どこでも折り返させる。
+ *
+ * break-word ではなく anywhere にしているのは、break-word が見た目を
+ * 折り返すだけで最小幅の計算に効かないため。グリッドの中に置くと
+ * トークンの幅のまま列が広がる。
+ */
 .invite-url {
   align-self: stretch;
+  max-width: 100%;
   padding: 0.5rem 0.6rem;
   border-radius: 0.4rem;
   background: var(--surface-2);
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 0.75rem;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .secondary-button {
@@ -820,6 +828,15 @@ button.unit-state-summary:hover {
   grid-template-columns: 1fr;
   gap: 1.25rem;
   align-items: start;
+}
+
+/*
+ * グリッドの子は既定で min-width: auto。中に折り返せない長い文字列
+ * （招待リンクのトークン）があると、その幅まで列が広がり画面から
+ * はみ出す。縦に積んでいたときは起きなかった。
+ */
+.panel-grid > * {
+  min-width: 0;
 }
 
 @media (min-width: 60rem) {
