@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
-import LogCard from '../components/LogCard'
 import BodyForm from '../components/BodyForm'
+import UnitStatePanel from '../components/UnitStatePanel'
+import ThreadItem from '../components/ThreadItem'
 import { useSession } from '../auth/SessionContext'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
   getUnit,
   updateUnitPages,
   updateUnitStatus,
-  UNIT_STATUS_LABEL,
-  UNIT_STATUSES,
   type Unit,
   type UnitStatus,
 } from '../repository/units'
@@ -28,11 +27,7 @@ import {
 import { signAttachments } from '../repository/attachments'
 import { addMark, listMyMarks, removeMark } from '../repository/marks'
 import { errorMessage } from '../lib/errorMessage'
-import {
-  formatUnitPageRange,
-  toPageNumber,
-  validatePageRange,
-} from '../lib/pageRange'
+import { toPageNumber, validatePageRange } from '../lib/pageRange'
 
 type LoadState =
   | { status: 'loading' }
@@ -264,27 +259,6 @@ export default function UnitView() {
       setLogError(errorMessage(caught))
     }
   }
-
-  const pageRangeText = unit
-    ? formatUnitPageRange(unit.pageFrom, unit.pageTo)
-    : null
-
-  /**
-   * 状態の1行。閉じていてもここは読める。
-   * ページも開始箇所も無いときは、まだ書かれていないことが分かる文言にする。
-   */
-  const stateSummary = unit ? (
-    <>
-      <span className={`pill status-${unit.status}`}>
-        {UNIT_STATUS_LABEL[unit.status]}
-      </span>
-      {pageRangeText && <span className="unit-pages">{pageRangeText}</span>}
-      {unit.startNote && <span>{unit.startNote}</span>}
-      {!pageRangeText && !unit.startNote && (
-        <span className="unit-state-empty">進んだページは未記入</span>
-      )}
-    </>
-  ) : null
 
   const nameOf = (userId: string | null) => {
     if (!userId) return '未割当'
@@ -618,101 +592,25 @@ export default function UnitView() {
             どちらも滅多に変えない（輪講中に1回触るかどうか）のに、
             枠付きのパネル2つで縦を大きく取り、この画面の目的である
             「書く・読む」を画面の外へ押し出していた。
-
-            隠すのは操作であって情報ではない。閉じていても状態とページは
-            読める。欠席した人が進み具合を追えることは #38 / #40 で
-            入れた目的そのものなので、そこは壊さない。
           */}
-          <div className="unit-state">
-            {canEdit ? (
-              <button
-                type="button"
-                className="unit-state-summary"
-                aria-expanded={stateOpen}
-                onClick={toggleState}
-              >
-                {stateSummary}
-                <span className="unit-state-toggle">
-                  {stateOpen ? '閉じる' : '変更'}
-                </span>
-              </button>
-            ) : (
-              <p className="unit-state-summary">{stateSummary}</p>
-            )}
-
-            {stateOpen && canEdit && (
-              <div className="unit-state-detail">
-                <div className="status-choice">
-                  {UNIT_STATUSES.map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      className={
-                        unit.status === status
-                          ? 'status-button selected'
-                          : 'status-button'
-                      }
-                      aria-pressed={unit.status === status}
-                      onClick={() => changeStatus(status)}
-                      disabled={statusBusy}
-                    >
-                      {UNIT_STATUS_LABEL[status]}
-                    </button>
-                  ))}
-                </div>
-                {statusError && <p className="screen-error">{statusError}</p>}
-
-                <form className="form" onSubmit={savePages}>
-                  <div className="field-row">
-                    <div className="field">
-                      <label htmlFor="pageFromInput">進んだページ・開始</label>
-                      <input
-                        id="pageFromInput"
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        placeholder="〜から"
-                        value={pageFromInput}
-                        onChange={(e) => setPageFromInput(e.target.value)}
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor="pageToInput">終了</label>
-                      <input
-                        id="pageToInput"
-                        type="number"
-                        min={0}
-                        inputMode="numeric"
-                        placeholder="〜まで"
-                        value={pageToInput}
-                        onChange={(e) => setPageToInput(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field">
-                    <label htmlFor="startNoteInput">開始箇所のメモ</label>
-                    <input
-                      id="startNoteInput"
-                      value={startNoteInput}
-                      onChange={(e) => setStartNoteInput(e.target.value)}
-                      placeholder="例: p.27の章末2.3から"
-                    />
-                  </div>
-
-                  {pagesError && <p className="screen-error">{pagesError}</p>}
-
-                  <button
-                    type="submit"
-                    className="secondary-button"
-                    disabled={pagesBusy}
-                  >
-                    {pagesBusy ? '保存中…' : 'ページを保存する'}
-                  </button>
-                </form>
-              </div>
-            )}
-          </div>
+          <UnitStatePanel
+            unit={unit}
+            canEdit={canEdit}
+            open={stateOpen}
+            onToggle={toggleState}
+            statusBusy={statusBusy}
+            statusError={statusError}
+            onChangeStatus={changeStatus}
+            pageFromInput={pageFromInput}
+            pageToInput={pageToInput}
+            startNoteInput={startNoteInput}
+            onPageFromChange={setPageFromInput}
+            onPageToChange={setPageToInput}
+            onStartNoteChange={setStartNoteInput}
+            pagesError={pagesError}
+            pagesBusy={pagesBusy}
+            onSavePages={savePages}
+          />
 
           {/* 輪講中に浮かんだことをその場で書けるようにする。
               画面を移ると読んでいた位置を失ううえ、戻る手間もかかる。
@@ -774,148 +672,38 @@ export default function UnitView() {
                   !collapsedThreads.has(thread.root.id) || hasFocusedReply
 
                 return (
-                  <li key={thread.root.id}>
-                    {thread.root.id === firstWithoutPageId && (
-                      <p className="log-group-divider">
-                        ここから下はページが未記入（{withoutPageCount}件）
-                      </p>
-                    )}
-                    <LogCard
-                      log={thread.root}
-                      authorName={nameOf(thread.root.authorId)}
-                      isFocused={thread.root.id === focusLogId}
-                      attachmentUrls={attachmentUrls}
-                      isMarked={markedLogIds.has(thread.root.id)}
-                      onToggleMark={() => toggleMark(thread.root.id)}
-                      footer={
-                        replyingTo === thread.root.id ? (
-                          <BodyForm
-                            label="返信"
-                            fieldId={`reply-${thread.root.id}`}
-                            submitLabel="返信する"
-                            busyLabel="送信中…"
-                            value={replyBody}
-                            onChange={setReplyBody}
-                            onSubmit={(e) => submitReply(e, thread.root.id)}
-                            busy={replyBusy}
-                            error={replyError}
-                            onCancel={() => setReplyingTo(null)}
-                            autoFocus
-                          />
-                        ) : pagingLogId === thread.root.id ? (
-                          <form
-                            className="paging-form"
-                            onSubmit={(e) => savePages2(e, thread.root.id)}
-                          >
-                            <div className="field-row">
-                              <div className="field">
-                                <label htmlFor={`ps-${thread.root.id}`}>
-                                  開始ページ
-                                </label>
-                                <input
-                                  id={`ps-${thread.root.id}`}
-                                  type="number"
-                                  min={0}
-                                  inputMode="numeric"
-                                  value={pagingStart}
-                                  onChange={(e) =>
-                                    setPagingStart(e.target.value)
-                                  }
-                                  autoFocus
-                                />
-                              </div>
-                              <div className="field">
-                                <label htmlFor={`pe-${thread.root.id}`}>
-                                  終了（任意）
-                                </label>
-                                <input
-                                  id={`pe-${thread.root.id}`}
-                                  type="number"
-                                  min={0}
-                                  inputMode="numeric"
-                                  value={pagingEnd}
-                                  onChange={(e) => setPagingEnd(e.target.value)}
-                                />
-                              </div>
-                            </div>
-                            {pagingError && (
-                              <p className="screen-error">{pagingError}</p>
-                            )}
-                            <div className="button-row">
-                              <button
-                                type="button"
-                                className="quiet-button"
-                                onClick={() => setPagingLogId(null)}
-                              >
-                                やめる
-                              </button>
-                              <button
-                                type="submit"
-                                className="secondary-button"
-                                disabled={pagingBusy}
-                              >
-                                {pagingBusy ? '保存中…' : 'ページを保存'}
-                              </button>
-                            </div>
-                          </form>
-                        ) : (
-                          <div className="log-actions">
-                            {canEdit && (
-                              <button
-                                type="button"
-                                className="quiet-button log-action-button"
-                                onClick={() => openReply(thread.root.id)}
-                              >
-                                返信する
-                              </button>
-                            )}
-                            {ownLogActions(thread.root, thread.replies.length)}
-                          </div>
-                        )
-                      }
-                    />
-
-                    {thread.replies.length > 0 && (
-                      <>
-                        <button
-                          type="button"
-                          className="quiet-button reply-toggle-button"
-                          aria-expanded={repliesOpen}
-                          aria-controls={`replies-${thread.root.id}`}
-                          onClick={() => toggleThread(thread.root.id)}
-                        >
-                          {repliesOpen
-                            ? `返信${thread.replies.length}件を隠す`
-                            : `返信${thread.replies.length}件を表示`}
-                        </button>
-
-                        {repliesOpen && (
-                          <ul
-                            className="reply-list"
-                            id={`replies-${thread.root.id}`}
-                          >
-                            {thread.replies.map((reply) => (
-                              <li key={reply.id}>
-                                <LogCard
-                                  log={reply}
-                                  authorName={nameOf(reply.authorId)}
-                                  isFocused={reply.id === focusLogId}
-                                  attachmentUrls={attachmentUrls}
-                                  isMarked={markedLogIds.has(reply.id)}
-                                  onToggleMark={() => toggleMark(reply.id)}
-                                  footer={
-                                    <div className="log-actions">
-                                      {ownLogActions(reply, 0)}
-                                    </div>
-                                  }
-                                />
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </>
-                    )}
-                  </li>
+                  <ThreadItem
+                    key={thread.root.id}
+                    thread={thread}
+                    nameOf={nameOf}
+                    focusLogId={focusLogId}
+                    attachmentUrls={attachmentUrls}
+                    markedLogIds={markedLogIds}
+                    onToggleMark={toggleMark}
+                    canEdit={canEdit}
+                    ownLogActions={ownLogActions}
+                    showPageDivider={thread.root.id === firstWithoutPageId}
+                    withoutPageCount={withoutPageCount}
+                    replyingTo={replyingTo}
+                    replyBody={replyBody}
+                    replyBusy={replyBusy}
+                    replyError={replyError}
+                    onOpenReply={openReply}
+                    onReplyBodyChange={setReplyBody}
+                    onSubmitReply={submitReply}
+                    onCancelReply={() => setReplyingTo(null)}
+                    pagingLogId={pagingLogId}
+                    pagingStart={pagingStart}
+                    pagingEnd={pagingEnd}
+                    pagingBusy={pagingBusy}
+                    pagingError={pagingError}
+                    onPagingStartChange={setPagingStart}
+                    onPagingEndChange={setPagingEnd}
+                    onSubmitPaging={savePages2}
+                    onCancelPaging={() => setPagingLogId(null)}
+                    repliesOpen={repliesOpen}
+                    onToggleThread={toggleThread}
+                  />
                 )
               })}
             </ul>
