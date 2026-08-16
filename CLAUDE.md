@@ -77,7 +77,7 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 | `docs/requirements.md` | なぜ作るか、課題、MVP範囲、データモデル、各種ポリシー |
 | `docs/features.md` | **画面ごとの機能一覧。** 個人の状態(👤)と共有の状態(👥)を明示している |
 | `docs/screen-flow.md` | 11画面と遷移、画面ごとの仕様 |
-| `docs/issues.md` | 実装計画（29件のIssueと依存関係） |
+| `docs/issues.md` | v1着手時点の実装計画（過去の記録。現在のIssueとは対応しない。縦切りの考え方は現役） |
 | `docs/open-questions.md` | 未決事項と、決着した論点の記録 |
 
 ## 進行状況・次のステップ
@@ -108,18 +108,19 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - [x] テストの導入（#71、Vitest 42件）と検証用の種まき（#72）
 - [x] **デザインの精査（8/16）。** 配色（#64）・本棚（#79）・レスポンシブ（#80）・
       回の画面の作り直し（#86 #87 #88）
+- [x] UnitView を部品に分ける（#101、927行→715行。`UnitStatePanel` / `ThreadItem` を切り出し）
+- [x] 「発言する」が記録の数だけ下へ流れる不具合を修正（#100、実使用で出たもの。
+      `ScreenFrame` の下部固定をやめ「いま書く」の隣に書く入口をまとめた）
 
 ### 次にやること（2026-08-16 時点）
 
 **実際に輪講で使う。** 機能とデザインは一巡した。ここから先に必要なのは、
-画面を眺めて見つける穴ではなく、使って出てくる不満。実際、下の #100 は
+画面を眺めて見つける穴ではなく、使って出てくる不満。実際、上の #100 は
 使って初めて出たもの。
 
-開いているIssueは3件。上から着手する。
+開いているIssueは1件。
 
-1. **[#100](https://github.com/iamhiroyuking/rinko-app/issues/100) 「発言する」が記録の数だけ下へ流れる**（実使用で出た不具合）
-2. **[#101](https://github.com/iamhiroyuking/rinko-app/issues/101) UnitView を部品に分ける**（927行。#100 を触る前にやると楽）
-3. **[#102](https://github.com/iamhiroyuking/rinko-app/issues/102) docs/issues.md が古い計画のまま参照されている**
+1. **[#102](https://github.com/iamhiroyuking/rinko-app/issues/102) docs/issues.md が古い計画のまま参照されている**
 
 ### 見送った案とその理由
 
@@ -272,10 +273,10 @@ URLを直接開いたときにVercelがファイルを探して404を返し、**
 データの持ち方に影響する論点はすべて決着済み。残るQ3（添付ファイルの保護方針）と
 Q4（第N回の番号が重複したときの並び順）は実装時の判断で足りる。
 
-### 実装計画の要点（詳細は docs/issues.md）
-Issueは縦切り（1つが「画面→データ取得→保存」まで通る単位）で分割してある。
-土台（#1〜#4: 環境・DB・認証）だけ横切り。背骨は `#5 教材 → #6 回 → #7 ログ → #8 タグ` で、
-ここが通れば「輪講で記録を残す」が成立する。上から順に着手し、並行して進めない。
+### Issueの割り方の考え方（v1着手時の計画は docs/issues.md に記録。現在のIssueとは対応しない）
+Issueは縦切り（1つが「画面→データ取得→保存」まで通る単位）で分割する方針で進めてきた。
+M0〜M1（環境・DB・認証・教材→回→ログ→タグの背骨）はこの考え方で立てた計画通りに進み、
+それ以降は実際に使って出た不満をIssueに足す形に移行している（現在は #100番台）。
 
 ## 開発の進め方の方針
 - Issueは1機能1つの粒度（半日〜2日で終わる大きさ）
