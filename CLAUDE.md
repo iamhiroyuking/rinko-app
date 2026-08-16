@@ -39,18 +39,19 @@
 ## データモデル
 ```
 User:       id, email, display_name
-Book:       id, title, cover_image_url, goal, created_by
+Book:       id, title, cover_image_url, cover_storage_path, goal, created_by
 Membership: id, book_id, user_id, role(editor|viewer),
             shelf_status(planned|reading|finished), display_order, deleted_at
 InviteLink: id, book_id, token, role, created_by
 Unit:       id, book_id, order, title, objective, presenter_id, scheduled_date,
-            status(not_started|in_progress|done), created_by, deleted_at
+            status(not_started|in_progress|done), page_from, page_to, start_note,
+            created_by, deleted_at
 Log:        id, unit_id, author_id, parent_log_id, type(none|preview|question|review),
             title, body, page_start, page_end
 LogMark:    log_id, user_id   ← 個人のしおり
 Tag:        id, book_id, name
 LogTag:     log_id, tag_id
-Attachment: id, log_id, file_url, file_name, mime_type
+Attachment: id, log_id, storage_path, file_name, mime_type
 ```
 
 `Membership.shelf_status` は本棚の整理用でユーザーが手動変更する。`Unit.status` は進捗計算用。目的が違うので名前を分けている。
@@ -97,21 +98,34 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - [x] 回のステータス変更・進捗バー（#40）
 - [x] 回に自由記述の開始箇所メモ（#38、`units.start_note`）
 - [x] BookSummaryViewの拡張（#41、次にやる回・ステータス変更・学習開始日・記録の数）
-- [x] HomeViewのフィルタ（#42、学習予定/学習中/学習完了のタブ）
+- [x] HomeViewのフィルタ（#42）→ のちに #79 で作り直し
+- [x] **共有が実際に成立した（8/16）。** `ひろゆき` / `test01` / `test02` の3人で
+      同じ教材を使い、編集者と閲覧者の両方を通した
+- [x] ログの編集・削除（#55）／回の編集（#56）／教材の編集（#76）
+- [x] 画像の添付（#53）と後片付け（#60）
+- [x] 閲覧者（#57）と招待リンクの失効（#58）
+- [x] しおり（#63）／記録のページ順（#90）／ページの後埋め（#91）
+- [x] テストの導入（#71、Vitest 42件）と検証用の種まき（#72）
+- [x] **デザインの精査（8/16）。** 配色（#64）・本棚（#79）・レスポンシブ（#80）・
+      回の画面の作り直し（#86 #87 #88）
 
-### 次にやること（2026-08-13時点）
+**未着手のIssueは無い（2026-08-16 時点）。**
 
-1. **[PR #49](https://github.com/iamhiroyuking/rinko-app/pull/49) をマージする。** #42 の実装。動作確認済みでマージ待ちのまま今日が終わった
-2. **[#47](https://github.com/iamhiroyuking/rinko-app/issues/47) 返信を折りたたみ・展開できるようにする。** 未着手のIssueはこれだけ。
-   **SearchViewからの遷移（`?log=<id>`）を壊しやすい。** UnitViewは描画後に
-   `document.getElementById('log-<id>')` を探しているので、返信を閉じた状態で描画すると
-   検索結果から返信に飛べなくなる。目当てのログが返信ならそのスレッドは開いて描画すること
-3. `.claude/launch.json`（dev server起動用）が未追跡のまま。コミットするか `.gitignore` に入れるか未決
+### 次にやること
 
-**チャット風UI・吹き出し・アイコンライブラリの導入はやらない。** Antigravityから提案があったが、
-このプロジェクトはTailwind不使用・絵文字アイコンで確定済みで、提案はその経緯を踏まえていなかった。
-デザインの作り込みはM4「デザインを精査する」まで意図的に保留している（機能が固まるとレイアウトが
-変わるため）。次のセッションで同種の提案が来ても、まずこのCLAUDE.mdと関連Issueを読んでから判断する。
+**実際に輪講で使う。** 機能とデザインは一巡した。ここから先に必要なのは、
+私が画面を眺めて見つける穴ではなく、使って出てくる不満。
+
+使って出たことをIssueにするところから再開する。
+
+### 本人にしかできない後始末
+
+- **孤児ファイル2件の削除。** Supabaseダッシュボード → Storage → `log-images` の
+  `5fb02b38-…/` と `cf5dc4ce-…/`。画像添付を直す前の検証で出たもので、
+  参加情報が消えているため権限が無く消せない
+- **検証用アカウントの削除。** `perm-check-2@example.com` と、必要なら
+  `test01` / `test02`（管理者権限が要る）
+- `線形代数` に検証で作った記録が残っている。実際に使い始める前に整理するとよい
 
 ### 動作を確認済みのもの
 - 行レベルセキュリティ（未ログイン・未参加のどちらでも何も返らない。3アカウントで確認）
@@ -122,8 +136,14 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
 - ログイン状態が再読み込みをまたいで保たれる
 
 ### まだ一度も動いていないもの
-- `protect_unit_deletion()` の**拒否側**。作成者が回をゴミ箱に入れて完全削除する経路は
-  2026-08-13に通った。作成者でない人が拒否されることはまだ確認していない（別アカウントが要る）
+**無し（2026-08-16に解消）。** 別アカウントで確認した項目は次のとおり。
+
+- `protect_unit_deletion()` の拒否側 → `400 / 回を削除・復元できるのは作成者だけです`
+- 閲覧者の画面で書き込みの導線が消えること
+- 閲覧者がAPIを直接叩いて拒否されること（投稿・回の作成・招待リンクは403）
+- 他人の記録に編集・削除が出ないこと、投稿者のなりすましが403で弾かれること
+- 共有相手が残る教材を抜けても画像が消えないこと
+- しおりが他人に見えないこと
 
 ### 共有で踏んだ落とし穴（同じ形に注意）
 - **行レベルセキュリティは「見てよいもの」を決めるだけで「欲しいもの」は決めない。**
@@ -136,11 +156,37 @@ SeminarView / CreateUnitView / UnitView / AddLogView / SearchView / TrashView
   忘れると、他人のステータスを自分のものとして表示・上書きする。1人で試している間は出ない
 - **結合先で絞るときは `!inner` が要る。** `countBookLogs` で `units!inner (book_id)` と
   書かないと `units` 側の条件が効かず、教材をまたいで数える
+- **更新ポリシーに `WITH CHECK` を書かないと `USING` が新しい行の判定に使われる。**
+  つまり「自分が触れる範囲どうし」なら結び付け先を書き換えられる。同じ形の穴を
+  3件塞いだ（#55 ログを他の教材の回へ移せた / #56 回を自分の教材へ移せた＝
+  「削除は作成者のみ」を迂回できた / #76 教材の作成者を付け替えられた）。
+  新しく更新ポリシーを書くときは必ず疑うこと
+- **「調べてから入れる」は同時に2回走ると壊れる。** 招待リンクの参加がこれで、
+  同じ人が二度開くと重複キーで落ちた。開発時は React の StrictMode が副作用を
+  2回実行するので必ず起きる。画面側の cancelled フラグは結果の扱いを止めるだけで、
+  送った問い合わせは止まらない。一度の挿入（on conflict）で済ませる
+
+### 画像の置き場所（2026-08-14〜16）
+
+ログの画像と教材の表紙は同じ非公開バケット `log-images` に入れている。
+パスは `<book_id>/<log_id>/…` と `<book_id>/cover/…`。
+
+**先頭が教材idなのが要点。** ストレージのポリシーは行ではなくパスに対して
+書くので、ここから参加者かどうかを判定している。教材を完全削除したときの
+後片付け（`removeBookImages`）も `<book_id>/` の下をまとめて消すので、
+表紙も自動で含まれる。
+
+**アップロード前に必ず縮小する**（`shrinkImage`）。無料枠の1GBは利用者ごと
+ではなくアプリ全体で共有するため、そのままの写真だと340枚ほどで埋まる。
+長辺1600px（表紙は800px）に落として常にJPEGで出している。
+
+**データベースは連鎖するがストレージは連鎖しない。** ログ・回・教材を消すとき、
+画像は先に消す。順番を逆にすると参照だけ失ったファイルが残る。
 
 ### 検証を安くする道具（2026-08-15に追加）
 
-**純粋関数はブラウザで確かめない。** `npm test`（Vitest）で37件が走る。
-進捗率・スレッドの組み立て・検索の絞り込みと並び順・ページ範囲が対象。
+**純粋関数はブラウザで確かめない。** `npm test`（Vitest）で42件が走る。
+進捗率・スレッドの組み立てとページ順・検索の絞り込みと並び順・ページ範囲が対象。
 「後からテストを書ける」とコメントしてある関数はここに入っている。
 UIのテストは書かない方針のまま。
 
