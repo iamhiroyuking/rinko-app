@@ -48,7 +48,8 @@ export default function UnitView() {
   const { session } = useSession()
   const [searchParams] = useSearchParams()
   const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [editingPages, setEditingPages] = useState(false)
+  /** 状態の詳細（進み具合とページの操作）を開いているか */
+  const [stateOpen, setStateOpen] = useState(false)
   const [pageFromInput, setPageFromInput] = useState('')
   const [pageToInput, setPageToInput] = useState('')
   const [startNoteInput, setStartNoteInput] = useState('')
@@ -210,6 +211,23 @@ export default function UnitView() {
     ? formatUnitPageRange(unit.pageFrom, unit.pageTo)
     : null
 
+  /**
+   * 状態の1行。閉じていてもここは読める。
+   * ページも開始箇所も無いときは、まだ書かれていないことが分かる文言にする。
+   */
+  const stateSummary = unit ? (
+    <>
+      <span className={`pill status-${unit.status}`}>
+        {UNIT_STATUS_LABEL[unit.status]}
+      </span>
+      {pageRangeText && <span className="unit-pages">{pageRangeText}</span>}
+      {unit.startNote && <span>{unit.startNote}</span>}
+      {!pageRangeText && !unit.startNote && (
+        <span className="unit-state-empty">進んだページは未記入</span>
+      )}
+    </>
+  ) : null
+
   const nameOf = (userId: string | null) => {
     if (!userId) return '未割当'
     return members.find((m) => m.userId === userId)?.displayName ?? '不明'
@@ -224,13 +242,23 @@ export default function UnitView() {
   const myRole = members.find((m) => m.userId === session?.user.id)?.role
   const canEdit = myRole !== 'viewer'
 
-  function startEditingPages() {
+  /**
+   * 状態の詳細を開閉する。
+   *
+   * 開くときに今の値を入力欄へ入れておく。開いてから改めて
+   * 「編集する」を押させると、階層がもう一段増えて元の木阿弥になる。
+   */
+  function toggleState() {
+    if (stateOpen) {
+      setStateOpen(false)
+      return
+    }
     if (!unit) return
     setPageFromInput(unit.pageFrom !== null ? String(unit.pageFrom) : '')
     setPageToInput(unit.pageTo !== null ? String(unit.pageTo) : '')
     setStartNoteInput(unit.startNote ?? '')
     setPagesError(null)
-    setEditingPages(true)
+    setStateOpen(true)
   }
 
   async function savePages(event: React.FormEvent) {
@@ -259,7 +287,7 @@ export default function UnitView() {
             }
           : prev,
       )
-      setEditingPages(false)
+      setStateOpen(false)
     } catch (caught: unknown) {
       setPagesError(errorMessage(caught))
     } finally {
@@ -469,120 +497,107 @@ export default function UnitView() {
             )}
           </p>
 
-          <section className="panel">
-            <h2 className="panel-title">この回の進み具合</h2>
-            <div className="status-choice">
-              {UNIT_STATUSES.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  className={
-                    unit.status === status
-                      ? 'status-button selected'
-                      : 'status-button'
-                  }
-                  aria-pressed={unit.status === status}
-                  onClick={() => changeStatus(status)}
-                  disabled={statusBusy || !canEdit}
-                >
-                  {UNIT_STATUS_LABEL[status]}
-                </button>
-              ))}
-            </div>
-            <p className="panel-note">
-              {canEdit
-                ? '参加者なら誰でも変更できます。輪講中に気づいた人がその場で直せるようにしています。'
-                : 'あなたは閲覧者なので変更できません。'}
-            </p>
-            {statusError && <p className="screen-error">{statusError}</p>}
-          </section>
+          {/*
+            この回の状態。進み具合と進んだページを1行にまとめている。
 
-          <section className="panel">
-            <h2 className="panel-title">進んだページ</h2>
-            {editingPages ? (
-              <form className="form" onSubmit={savePages}>
-                <div className="field-row">
+            どちらも滅多に変えない（輪講中に1回触るかどうか）のに、
+            枠付きのパネル2つで縦を大きく取り、この画面の目的である
+            「書く・読む」を画面の外へ押し出していた。
+
+            隠すのは操作であって情報ではない。閉じていても状態とページは
+            読める。欠席した人が進み具合を追えることは #38 / #40 で
+            入れた目的そのものなので、そこは壊さない。
+          */}
+          <div className="unit-state">
+            {canEdit ? (
+              <button
+                type="button"
+                className="unit-state-summary"
+                aria-expanded={stateOpen}
+                onClick={toggleState}
+              >
+                {stateSummary}
+                <span className="unit-state-toggle">
+                  {stateOpen ? '閉じる' : '変更'}
+                </span>
+              </button>
+            ) : (
+              <p className="unit-state-summary">{stateSummary}</p>
+            )}
+
+            {stateOpen && canEdit && (
+              <div className="unit-state-detail">
+                <div className="status-choice">
+                  {UNIT_STATUSES.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      className={
+                        unit.status === status
+                          ? 'status-button selected'
+                          : 'status-button'
+                      }
+                      aria-pressed={unit.status === status}
+                      onClick={() => changeStatus(status)}
+                      disabled={statusBusy}
+                    >
+                      {UNIT_STATUS_LABEL[status]}
+                    </button>
+                  ))}
+                </div>
+                {statusError && <p className="screen-error">{statusError}</p>}
+
+                <form className="form" onSubmit={savePages}>
+                  <div className="field-row">
+                    <div className="field">
+                      <label htmlFor="pageFromInput">進んだページ・開始</label>
+                      <input
+                        id="pageFromInput"
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        placeholder="〜から"
+                        value={pageFromInput}
+                        onChange={(e) => setPageFromInput(e.target.value)}
+                      />
+                    </div>
+                    <div className="field">
+                      <label htmlFor="pageToInput">終了</label>
+                      <input
+                        id="pageToInput"
+                        type="number"
+                        min={0}
+                        inputMode="numeric"
+                        placeholder="〜まで"
+                        value={pageToInput}
+                        onChange={(e) => setPageToInput(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
                   <div className="field">
-                    <label htmlFor="pageFromInput">開始</label>
+                    <label htmlFor="startNoteInput">開始箇所のメモ</label>
                     <input
-                      id="pageFromInput"
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      placeholder="〜から"
-                      value={pageFromInput}
-                      onChange={(e) => setPageFromInput(e.target.value)}
+                      id="startNoteInput"
+                      value={startNoteInput}
+                      onChange={(e) => setStartNoteInput(e.target.value)}
+                      placeholder="例: p.27の章末2.3から"
                     />
                   </div>
-                  <div className="field">
-                    <label htmlFor="pageToInput">終了</label>
-                    <input
-                      id="pageToInput"
-                      type="number"
-                      min={0}
-                      inputMode="numeric"
-                      placeholder="〜まで"
-                      value={pageToInput}
-                      onChange={(e) => setPageToInput(e.target.value)}
-                    />
-                  </div>
-                </div>
 
-                <div className="field">
-                  <label htmlFor="startNoteInput">開始箇所のメモ</label>
-                  <input
-                    id="startNoteInput"
-                    value={startNoteInput}
-                    onChange={(e) => setStartNoteInput(e.target.value)}
-                    placeholder="例: p.27の章末2.3から"
-                  />
-                </div>
+                  {pagesError && <p className="screen-error">{pagesError}</p>}
 
-                {pagesError && <p className="screen-error">{pagesError}</p>}
-
-                <div className="button-row">
-                  <button
-                    type="button"
-                    className="quiet-button"
-                    onClick={() => setEditingPages(false)}
-                  >
-                    キャンセル
-                  </button>
                   <button
                     type="submit"
                     className="secondary-button"
                     disabled={pagesBusy}
                   >
-                    {pagesBusy ? '保存中…' : '保存する'}
+                    {pagesBusy ? '保存中…' : 'ページを保存する'}
                   </button>
-                </div>
-              </form>
-            ) : (
-              <>
-                {pageRangeText === null && unit.startNote === null ? (
-                  <p className="panel-note">まだ記録がありません。</p>
-                ) : (
-                  <>
-                    {pageRangeText && (
-                      <p className="panel-note">{pageRangeText}</p>
-                    )}
-                    {unit.startNote && (
-                      <p className="panel-note">開始箇所: {unit.startNote}</p>
-                    )}
-                  </>
-                )}
-                {canEdit && (
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={startEditingPages}
-                  >
-                    編集する
-                  </button>
-                )}
-              </>
+                </form>
+              </div>
             )}
-          </section>
+          </div>
 
           {/* 輪講中に浮かんだことをその場で書けるようにする。
               画面を移ると読んでいた位置を失ううえ、戻る手間もかかる。

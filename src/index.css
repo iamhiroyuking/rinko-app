@@ -740,6 +740,63 @@ mark {
   gap: 0.5rem;
 }
 
+/*
+ * 回の状態の1行。
+ *
+ * 進み具合と進んだページを枠付きのパネル2つで見せていたのをやめ、
+ * 見出しの下の1行にまとめている。どちらも滅多に変えないのに、
+ * この画面の目的である「書く・読む」を画面の外へ押し出していた。
+ */
+.unit-state {
+  display: flex;
+  flex-direction: column;
+}
+
+.unit-state-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.1rem;
+  border: none;
+  background: none;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+button.unit-state-summary {
+  cursor: pointer;
+}
+
+button.unit-state-summary:hover {
+  color: var(--link);
+}
+
+/* 開閉の合図。右端に寄せて、内容と混ざらないようにする */
+.unit-state-toggle {
+  margin-left: auto;
+  color: var(--link);
+  font-size: 0.75rem;
+}
+
+.unit-state-empty {
+  color: var(--muted);
+}
+
+.unit-state-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+}
+
 /* 進み具合のバー */
 .progress {
   display: flex;
