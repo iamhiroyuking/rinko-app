@@ -75,8 +75,24 @@ body {
  * 見た目の体系づくりは Issue #26 で行うので、ここでは導線が成り立つことを優先。
  * ------------------------------------------------------------------------- */
 
+/*
+ * 内容に合わせて器の幅を変える。
+ *
+ * 既定は文章を読む幅。1行が長くなると目が行を戻せなくなるので、
+ * 画面が広くても本文は広げない。
+ * 一覧・並びの画面（本棚・回のリスト）だけ screen-wide にして、
+ * 横に並べられるものを並べる。
+ *
+ * ヘッダーと本文で同じ変数を使っている。別々に持つと、片方だけ
+ * 広げたときに「戻る」と本文の左端がずれる。
+ */
 .screen {
+  --content-width: 40rem;
   min-height: 100vh;
+}
+
+.screen-wide {
+  --content-width: 72rem;
 }
 
 .app-header {
@@ -88,7 +104,7 @@ body {
 }
 
 .app-header-inner {
-  max-width: 40rem;
+  max-width: var(--content-width);
   margin: 0 auto;
   padding: 0 0.5rem;
   min-height: 3rem;
@@ -132,7 +148,7 @@ body {
 }
 
 .screen-body {
-  max-width: 40rem;
+  max-width: var(--content-width);
   margin: 0 auto;
   padding: 1.25rem 1rem 3rem;
   display: flex;

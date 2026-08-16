@@ -29,6 +29,17 @@ type Props = {
   secondaryLinks?: SecondaryLink[]
   /** いちばん下に置く補足。今はログイン中の表示にだけ使っている */
   footNote?: ReactNode
+  /**
+   * 内容に合わせた幅。
+   *
+   * `reading` は文章を読む画面（既定）。1行が長くなると目が戻れなくなるので、
+   * 画面が広くても本文の幅は広げない。
+   * `wide` は一覧・並びの画面。横に並べられるものは並べたいので、
+   * 広い画面ではその分だけ使う。
+   *
+   * スマホでは差が出ない（どちらも画面幅いっぱいに収まる）。
+   */
+  width?: 'reading' | 'wide'
   children?: ReactNode
 }
 
@@ -46,10 +57,11 @@ export default function ScreenFrame({
   primaryAction,
   secondaryLinks,
   footNote,
+  width = 'reading',
   children,
 }: Props) {
   return (
-    <div className="screen">
+    <div className={width === 'wide' ? 'screen screen-wide' : 'screen'}>
       <header className="app-header">
         <div className="app-header-inner">
           {backTo ? (

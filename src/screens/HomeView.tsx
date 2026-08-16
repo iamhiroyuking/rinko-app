@@ -156,6 +156,7 @@ export default function HomeView() {
   return (
     <ScreenFrame
       title="本棚"
+      width="wide"
       description={`${SHELF_STATUS_LABEL[shelfStatus]}の教材が並びます。`}
       headerAction={
         <button type="button" className="quiet-button" onClick={handleSignOut}>

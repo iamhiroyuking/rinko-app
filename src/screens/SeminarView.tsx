@@ -129,6 +129,7 @@ export default function SeminarView() {
           : '回のリスト'
       }
       description="輪講の回が第N回の順に並びます。"
+      width="wide"
       backTo={`/books/${bookId}`}
       primaryAction={
         canEdit
