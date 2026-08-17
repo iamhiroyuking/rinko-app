@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import { IconTrash } from '../components/icons'
 import { useSession } from '../auth/SessionContext'
 import { getBook, type Book } from '../repository/books'
 import { listBookMembers, type BookMember } from '../repository/members'
@@ -202,7 +203,7 @@ export default function SeminarView() {
                         onClick={() => handleDelete(unit)}
                         disabled={deletingId === unit.id}
                       >
-                        🗑
+                        <IconTrash />
                       </button>
                     )}
                   </li>
