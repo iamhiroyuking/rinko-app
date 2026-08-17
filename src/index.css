@@ -1147,11 +1147,17 @@ button.unit-state-summary:hover {
   color: var(--muted);
 }
 
+/*
+  幅の狭いカードなので balance は使わない。
+  balance は行の長さを揃えようとして1行目を早く折り返すため、
+  右側に余白が残って左に寄って見える。pretty なら最終行が
+  1語だけになるのを避けるだけで、行は幅いっぱいまで使う。
+*/
 .book-title {
   font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
-  text-wrap: balance;
+  text-wrap: pretty;
 }
 
 .stack {
