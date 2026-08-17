@@ -1066,6 +1066,10 @@ button.unit-state-summary:hover {
  * 青にすると琥珀色の帯だけが浮き、注意書きに見えてしまう。
  * 目標は警告ではないので、面の色を落ち着かせて左の線で示す形にした。
  */
+/*
+  改行を残す。教材の目標は複数行書けるようにしてある（#111）。
+  「この回で学ぶこと」は1行の入力なので、こちらは見た目が変わらない。
+*/
 .objective-card {
   padding: 0.45rem 0.7rem;
   border-radius: 0.4rem;
@@ -1073,6 +1077,7 @@ button.unit-state-summary:hover {
   background: var(--surface-2);
   color: var(--fg);
   font-size: 0.875rem;
+  white-space: pre-wrap;
 }
 
 /* 見出しは行を分けず、本文と同じ行に置く。1行で済むものに2行使わない */
