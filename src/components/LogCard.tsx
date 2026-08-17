@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { IconBookmark } from './icons'
+import LogBody from './LogBody'
 import {
   formatPageRange,
   LOG_TYPE_LABEL,
@@ -80,7 +81,7 @@ export default function LogCard({
         )}
       </div>
       {log.title && <p className="log-title">{log.title}</p>}
-      <p className="log-body">{log.body}</p>
+      <LogBody>{log.body}</LogBody>
       {log.attachments.length > 0 && (
         <div className="attachment-list">
           {log.attachments.map((file) => {
