@@ -7,8 +7,12 @@ type LogRow = Database['public']['Tables']['logs']['Row']
 
 export type LogType = LogRow['type']
 
+/*
+  `none` は選択欄でしか出ない。記録のカードは `type !== 'none'` のときだけ
+  この札を出すので、「指定しない」が本文の横に並ぶことはない。
+*/
 export const LOG_TYPE_LABEL: Record<LogType, string> = {
-  none: 'なし',
+  none: '指定しない',
   preview: '予習メモ',
   question: '疑問',
   review: '復習',

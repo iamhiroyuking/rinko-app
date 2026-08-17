@@ -193,7 +193,7 @@ export default function AddLogView() {
 
       <form className="form" onSubmit={handleSubmit} hidden={loading}>
         <div className="field">
-          <label htmlFor="type">種別</label>
+          <label htmlFor="type">これは何の記録？</label>
           <select
             id="type"
             value={type}
