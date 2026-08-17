@@ -1,12 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <!--
     リンクを貼ったときに出る画像の元（#114）。
-    これ自体は配信しない。public/og-image.png に書き出したものを使う。
+    これ自体は配信しない。public/og-image.jpg に書き出したものを使う。
+    書き出し方と、なぜこの形なのかは docs/og-image.md に書いてある。
 
-      qlmanage -t -s 1200 -o /tmp docs/og-image.svg
-      mv /tmp/og-image.svg.png public/og-image.png
-
-    SVGのままだと Slack や X が描画しないので、必ずPNGにして置く。
+    中身は横 285〜915（高さと同じ630の正方形）に収めること。
+    受け取る側のアプリが正方形に切ることがあり、横に広げると右が落ちる。
   -->
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
@@ -17,8 +16,8 @@
 
   <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- favicon と同じ木。480x480 の位置へ置き直している -->
-  <g transform="translate(130, 115) scale(5.625)">
+  <!-- favicon と同じ木。64のviewBoxを200px幅にして中央へ置く -->
+  <g transform="translate(500, 110) scale(3.125)">
     <path d="M32 54
              L32 36
              C32 32 30 30 27 27
@@ -49,10 +48,10 @@
     <ellipse cx="43" cy="18" rx="2.6" ry="1.4" fill="#4caf50" transform="rotate(10 43 18)"/>
   </g>
 
-  <text x="570" y="315"
+  <text x="600" y="425" text-anchor="middle"
         font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif"
-        font-size="112" font-weight="700" fill="#ffffff">輪講</text>
-  <text x="570" y="387"
+        font-size="96" font-weight="700" fill="#ffffff">輪講</text>
+  <text x="600" y="487" text-anchor="middle"
         font-family="Hiragino Sans, Hiragino Kaku Gothic ProN, sans-serif"
-        font-size="38" font-weight="400" fill="#d8ecf7">研究室の輪講を、記録して共有する</text>
+        font-size="32" font-weight="400" fill="#d8ecf7">研究室の輪講を記録して共有する</text>
 </svg>
