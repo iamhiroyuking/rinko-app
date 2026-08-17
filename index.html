@@ -4,7 +4,40 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>rinko-app</title>
+
+    <title>輪講 | 研究室の輪講を記録して共有する</title>
+    <meta
+      name="description"
+      content="研究室の輪講を記録して共有するアプリ。教材ごとに回を作り、疑問や気づきをその場で書き残して、あとからページ順・ハッシュタグで探せます。"
+    />
+
+    <!--
+      リンクを貼ったときの見た目（#114）。
+
+      このアプリは未ログインで中身が見えないので、検索エンジンが読めるのは
+      ログイン画面だけ。ここを埋める目的は検索順位ではなく、
+      Slack や X にURLを貼ったときに何のアプリか伝わること。
+
+      og:image は絶対URLでないと読まれない。画像は docs/og-image.svg が元で、
+      書き出し方はそのファイルのコメントに書いてある。
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="輪講" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:title" content="輪講 | 研究室の輪講を記録して共有する" />
+    <meta
+      property="og:description"
+      content="教材ごとに回を作り、疑問や気づきをその場で書き残して、あとからページ順・ハッシュタグで探せます。"
+    />
+    <meta property="og:url" content="https://rinko-app-silk.vercel.app/" />
+    <meta
+      property="og:image"
+      content="https://rinko-app-silk.vercel.app/og-image.jpg"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="輪講 — 研究室の輪講を、記録して共有する" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
