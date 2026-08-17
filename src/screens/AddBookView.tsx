@@ -203,11 +203,14 @@ export default function AddBookView() {
 
             <div className="field">
               <label htmlFor="goal">全体を通しての目標（任意）</label>
-              <input
+              {/* 目標は1つとは限らない。1行しか書けないと「、」で
+                  区切るしかなくなるので、改行して並べられるようにする */}
+              <textarea
                 id="goal"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                placeholder="例: 10月末までに5章まで読み切る"
+                rows={3}
+                placeholder={'例: 10月末までに5章まで読み切る\n演習問題を全部解く'}
               />
             </div>
 
