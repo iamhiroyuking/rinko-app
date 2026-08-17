@@ -760,11 +760,97 @@ mark {
   font-weight: 700;
 }
 
+/*
+  記録の本文（#113）。Markdownを反映するので中身は要素になる。
+  改行は remark-breaks が <br> にするため pre-wrap は要らない。
+  残すと要素の間の改行まで拾って余分な行が空く。
+*/
 .log-body {
   margin: 0.15rem 0 0;
   font-size: 0.9375rem;
-  white-space: pre-wrap;
   overflow-wrap: break-word;
+}
+
+/* 端の余白はカードが持つ。中身の最初と最後では作らない */
+.log-body > :first-child {
+  margin-top: 0;
+}
+
+.log-body > :last-child {
+  margin-bottom: 0;
+}
+
+.log-body p {
+  margin: 0.35rem 0;
+}
+
+.log-body ul,
+.log-body ol {
+  margin: 0.35rem 0;
+  padding-left: 1.4rem;
+}
+
+.log-body li {
+  margin: 0.1rem 0;
+}
+
+/* 記録の中の見出し。画面の見出しより大きくならないようにする */
+.log-body h1,
+.log-body h2,
+.log-body h3,
+.log-body h4,
+.log-body h5,
+.log-body h6 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.log-body code {
+  padding: 0.05rem 0.25rem;
+  border-radius: 0.25rem;
+  background: var(--surface-2);
+  font-size: 0.875em;
+}
+
+.log-body pre {
+  margin: 0.35rem 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.4rem;
+  background: var(--surface-2);
+  overflow-x: auto;
+}
+
+.log-body pre code {
+  padding: 0;
+  background: none;
+}
+
+.log-body blockquote {
+  margin: 0.35rem 0;
+  padding-left: 0.65rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.log-body a {
+  color: var(--accent);
+}
+
+.log-body img {
+  max-width: 100%;
+  border-radius: 0.35rem;
+}
+
+.log-body table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.log-body th,
+.log-body td {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--line);
 }
 
 .unit-list {

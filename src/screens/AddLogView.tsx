@@ -226,6 +226,12 @@ export default function AddLogView() {
             rows={5}
             required
           />
+          {/* 案内が無いと気づかれない。書ける記法のうち使う頻度が
+              高いものだけ挙げる（#113） */}
+          <p className="panel-note">
+            行頭に <code>-</code> で箇条書き、
+            <code>**強調**</code> で太字になります。改行はそのままです。
+          </p>
         </div>
 
         <div className="field-row">
