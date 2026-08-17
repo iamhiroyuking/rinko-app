@@ -13,7 +13,7 @@ import { parseTagNames } from '../repository/tags'
 import { uploadLogImages } from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
 import { toPageNumber, validatePageRange } from '../lib/pageRange'
-import { ACCEPTED_TYPES } from '../lib/image'
+import { ACCEPTED_TYPES, canDecode, checkImageFile } from '../lib/image'
 
 /**
  * 発言の投稿と編集。
@@ -155,6 +155,38 @@ export default function AddLogView() {
   }
 
   /**
+   * 選ばれた画像を受け取る。
+   *
+   * **ここで読めるかどうかまで確かめる。** 縮小は投稿のときに走るので、
+   * 調べずに受け取ると「本文を全部書いて投稿を押した後で弾かれる」ことになる。
+   * HEICをChromeで選んだときがこれに当たる。
+   */
+  async function pickImages(files: File[]) {
+    setImages(files)
+    setError(null)
+    if (files.length === 0) return
+
+    for (const file of files) {
+      const rejection = checkImageFile(file)
+      if (rejection) {
+        setError(rejection)
+        return
+      }
+    }
+
+    const undecodable: string[] = []
+    for (const file of files) {
+      if (!(await canDecode(file))) undecodable.push(file.name)
+    }
+    if (undecodable.length > 0) {
+      setError(
+        `${undecodable.join('、')} はこのブラウザでは開けません。` +
+          'iPhoneのHEICはSafariなら貼れます。Chromeなら写真アプリから選び直すとJPEGになります。',
+      )
+    }
+  }
+
+  /**
    * 失敗した画像だけ送り直す。
    *
    * 本文はもう投稿されているので作り直さない。済んだ枚数から先だけ送る。
@@ -286,7 +318,7 @@ export default function AddLogView() {
             type="file"
             accept={ACCEPTED_TYPES.join(',')}
             multiple
-            onChange={(e) => setImages(Array.from(e.target.files ?? []))}
+            onChange={(e) => pickImages(Array.from(e.target.files ?? []))}
           />
           <p className="panel-note">
             板書やノートの写真を貼れます。長辺1600pxまで縮小してから送るので、そのままの写真を選んで構いません。

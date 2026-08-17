@@ -11,7 +11,7 @@ import {
 import { signPaths, uploadBookCover } from '../repository/attachments'
 import { extractToken, joinBookWithToken } from '../repository/invites'
 import { errorMessage } from '../lib/errorMessage'
-import { ACCEPTED_TYPES } from '../lib/image'
+import { ACCEPTED_TYPES, canDecode, checkImageFile } from '../lib/image'
 
 type Mode = 'create' | 'join'
 
@@ -90,6 +90,31 @@ export default function AddBookView() {
     setPreviewUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [coverFile])
+
+  /**
+   * 表紙に選ばれた画像を受け取る。
+   *
+   * 縮小は保存のときに走るので、ここで読めるかまで確かめておかないと、
+   * 書名を入れて保存を押した後で弾かれる（AddLogView と同じ理由）。
+   */
+  async function pickCover(file: File | null) {
+    setCoverFile(file)
+    setError(null)
+    if (!file) return
+
+    const rejection = checkImageFile(file)
+    if (rejection) {
+      setError(rejection)
+      return
+    }
+
+    if (!(await canDecode(file))) {
+      setError(
+        `${file.name} はこのブラウザでは開けません。` +
+          'iPhoneのHEICはSafariなら貼れます。Chromeなら写真アプリから選び直すとJPEGになります。',
+      )
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -220,7 +245,7 @@ export default function AddBookView() {
                 id="coverFile"
                 type="file"
                 accept={ACCEPTED_TYPES.join(',')}
-                onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => pickCover(e.target.files?.[0] ?? null)}
               />
               {previewUrl && (
                 <ul className="preview-list">
