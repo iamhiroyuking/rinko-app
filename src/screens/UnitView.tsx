@@ -462,7 +462,7 @@ export default function UnitView() {
   /**
    * 回の画面からそのまま投稿する。
    *
-   * 本文だけ。種別・ページ・タグ・画像を使いたいときは AddLogView へ。
+   * 本文だけ。記録の種類・ページ・タグ・画像を使いたいときは AddLogView へ。
    * 画面を移らないので、読んでいた位置と流れを保ったまま書ける。
    */
   async function submitQuickPost(event: React.FormEvent) {
@@ -510,7 +510,7 @@ export default function UnitView() {
     setReplyError(null)
     setReplyBusy(true)
     try {
-      // 返信は本文だけ。種別・ページ・タグは会話の返しには要らないので
+      // 返信は本文だけ。記録の種類・ページ・タグは会話の返しには要らないので
       // フォームを増やさず、必要なら通常の投稿を使ってもらう
       await createLog({ unitId, type: 'none', body, parentLogId })
       const refreshed = await listLogs(unitId)
@@ -606,9 +606,9 @@ export default function UnitView() {
 
           {/* 輪講中に浮かんだことをその場で書けるようにする。
               画面を移ると読んでいた位置を失ううえ、戻る手間もかかる。
-              種別・ページ・タグ・画像を使いたいときは隣の入口から
+              記録の種類・ページ・タグ・画像を使いたいときは隣の「詳しく書く」から
               AddLogView へ（#100: 記録が増えるほど遠くなる下部固定を廃止し、
-              書く入口をここ1か所にまとめた） */}
+              書く入口をここ1か所にまとめた。#109: 「種別」という語をUIから消した） */}
           {canEdit && (
             <BodyForm
               label="いま書く"
@@ -627,7 +627,7 @@ export default function UnitView() {
                   className="log-action-link"
                   to={`/books/${bookId}/units/${unitId}/logs/new`}
                 >
-                  種別やページを付けて書く
+                  詳しく書く
                 </Link>
               }
             />
