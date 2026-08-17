@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { IconBookmark } from './icons'
 import {
   formatPageRange,
   LOG_TYPE_LABEL,
@@ -71,7 +72,7 @@ export default function LogCard({
             title={isMarked ? 'しおりを外す' : 'しおりを付ける'}
             onClick={onToggleMark}
           >
-            <span aria-hidden>{isMarked ? '🔖' : '📑'}</span>
+            <IconBookmark filled={isMarked} />
             <span className="visually-hidden">
               {isMarked ? 'しおりを外す' : 'しおりを付ける'}
             </span>

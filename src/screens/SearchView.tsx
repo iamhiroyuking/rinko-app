@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import { IconBookmark, IconImage } from '../components/icons'
 import { listBookMembers, type BookMember } from '../repository/members'
 import {
   filterLogs,
@@ -159,7 +160,7 @@ export default function SearchView() {
           aria-pressed={markedOnly}
           onClick={() => setMarkedOnly((on) => !on)}
         >
-          <span aria-hidden>🔖</span> しおりだけ（{markedLogIds.size}）
+          <IconBookmark filled /> しおりだけ（{markedLogIds.size}）
         </button>
       </div>
 
@@ -220,7 +221,7 @@ export default function SearchView() {
                         {hit.attachmentCount > 0 && (
                           <>
                             {' '}
-                            ・ <span aria-hidden>🖼</span> 画像
+                            ・ <IconImage /> 画像
                             {hit.attachmentCount}枚
                           </>
                         )}

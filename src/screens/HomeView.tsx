@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import { IconBookOpen, IconUsers } from '../components/icons'
 import { useSession } from '../auth/SessionContext'
 import { signOut } from '../repository/auth'
 import { getMyProfile, type Profile } from '../repository/profiles'
@@ -217,17 +218,14 @@ export default function HomeView() {
                       {coverSrc ? (
                         <img className="book-cover" src={coverSrc} alt="" />
                       ) : (
-                        <span
-                          className="book-cover book-cover-blank"
-                          aria-hidden
-                        >
-                          📖
+                        <span className="book-cover book-cover-blank">
+                          <IconBookOpen />
                         </span>
                       )}
                       <span className="book-title">{book.title}</span>
                       {book.memberCount > 1 && (
                         <span className="book-shared">
-                          <span aria-hidden>👥</span> {book.memberCount}人で共有
+                          <IconUsers /> {book.memberCount}人で共有
                         </span>
                       )}
                     </Link>

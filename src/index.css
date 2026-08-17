@@ -191,6 +191,18 @@ body {
 }
 
 /* その画面でいちばんやりたいこと。リンクだが見た目はボタンにする */
+/*
+  アイコン（#112）。大きさも色も置いた場所に追従させるので、
+  ここでは並びの調整だけをする。文字と並べたとき下がりすぎないよう
+  少し持ち上げている。
+*/
+.icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
 .primary-link {
   display: inline-flex;
   align-items: center;
