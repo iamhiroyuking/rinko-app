@@ -223,11 +223,6 @@ export default function BookSummaryView() {
       description="次にやる回と、この教材でのこれまで。"
       width="wide"
       backTo="/"
-      primaryAction={
-        book
-          ? { label: '学習を開始する', to: `/books/${bookId}/units` }
-          : undefined
-      }
       headerAction={
         book && canEdit ? (
           <Link className="log-action-link" to={`/books/${bookId}/edit`}>
@@ -256,6 +251,18 @@ export default function BookSummaryView() {
               {book.goal}
             </div>
           )}
+
+          {/*
+            この画面でいちばんやりたいのは「回を見に行く」こと。
+            ScreenFrame の主要操作は内容の下に出るので、この画面では
+            これまでの記録を全部読み飛ばした先にあった。#100 と同じ形。
+
+            「次にやる回」はこの下に残す。回のタイトルそのものが
+            その回への入り口なので、消すと1タップ増える。
+          */}
+          <Link className="primary-link" to={`/books/${bookId}/units`}>
+            学習を開始する
+          </Link>
 
           <div className="panel-grid">
             <section className="panel">
