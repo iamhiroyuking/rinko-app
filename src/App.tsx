@@ -4,7 +4,7 @@ import RequireLogin from './auth/RequireLogin'
 import LoginView from './screens/LoginView'
 import ForgotPasswordView from './screens/ForgotPasswordView'
 import ResetPasswordView from './screens/ResetPasswordView'
-import HomeView from './screens/HomeView'
+import RootView from './screens/RootView'
 import AddBookView from './screens/AddBookView'
 import JoinBookView from './screens/JoinBookView'
 import BookSummaryView from './screens/BookSummaryView'
@@ -19,7 +19,8 @@ import TrashView from './screens/TrashView'
  * URLと画面の対応表。
  *
  * `:bookId` のようにコロンが付いた部分は可変で、画面側から値を取り出せる。
- * ログイン画面以外はすべて RequireLogin の内側に置く。こうしておくと
+ * 外側に出してよいのは、ログイン・パスワード再設定・紹介ページだけ。
+ * それ以外はすべて RequireLogin の内側に置く。こうしておくと
  * 画面を足すときに保護を書き忘れても、外側に出さない限り守られる。
  */
 export default function App() {
@@ -33,8 +34,12 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordView />} />
           <Route path="/reset-password" element={<ResetPasswordView />} />
 
+          {/* `/` だけは関門の外に出してある。未ログインには紹介ページを、
+              ログイン済みには本棚を出すため（#114）。振り分けは RootView 側。
+              紹介ページは静的な文章だけで、教材の情報は含まない */}
+          <Route path="/" element={<RootView />} />
+
           <Route element={<RequireLogin />}>
-            <Route path="/" element={<HomeView />} />
             <Route path="/books/new" element={<AddBookView />} />
             {/* 招待リンクの行き先。関門の内側なので、未ログインなら
                 ログイン画面へ送られ、ログイン後にここへ戻ってくる */}
