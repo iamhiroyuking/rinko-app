@@ -159,8 +159,13 @@ export default function HomeView() {
       title="本棚"
       width="wide"
       description={`${SHELF_STATUS_LABEL[shelfStatus]}の教材が並びます。`}
+      // ヘッダーの操作。押させたいものではないので控えめのまま
       headerAction={
-        <button type="button" className="quiet-button" onClick={handleSignOut}>
+        <button
+          type="button"
+          className="quiet-button subtle"
+          onClick={handleSignOut}
+        >
           ログアウト
         </button>
       }

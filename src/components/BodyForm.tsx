@@ -81,7 +81,11 @@ export default function BodyForm({
       {error && <p className="screen-error">{error}</p>}
       <div className="button-row" hidden={!expanded}>
         {onCancel && (
-          <button type="button" className="quiet-button" onClick={onCancel}>
+          <button
+            type="button"
+            className="quiet-button subtle"
+            onClick={onCancel}
+          >
             キャンセル
           </button>
         )}

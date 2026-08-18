@@ -252,22 +252,44 @@ body {
   font-size: 1.1rem;
 }
 
-/* ヘッダーに置く、目立たせたくない操作 */
+/*
+  枠も背景も持たない、文字だけのボタン。
+
+  以前はすべて --muted（押せない文字の色）で、本文と見分けが付かなかった。
+  性質ごとに3つに分ける（#127）。枠は付けない。記録のカードの中に枠が
+  増えると、読む画面なのに騒がしくなるため、色だけで区別する。
+
+  - 既定 …… 押す文字。--link（パレットの決めごとどおり）
+  - .danger … 壊す。目立たせるためではなく、押す文字と間違えないため
+  - .subtle … 取り消す・離れる。ここは控えめでよい
+*/
 .quiet-button {
   min-height: 2.75rem;
   padding: 0 0.75rem;
   border: none;
   border-radius: 0.5rem;
   background: none;
-  color: var(--muted);
+  color: var(--link);
   font-family: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
+.quiet-button.danger {
+  color: var(--danger);
+}
+
+.quiet-button.subtle {
+  color: var(--muted);
+}
+
 .quiet-button:hover {
   background: var(--surface-2);
-  color: var(--fg);
+}
+
+.quiet-button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .book-shared {
@@ -449,6 +471,32 @@ body {
 .field-row .field {
   flex: 1;
   min-width: 0;
+}
+
+/* 入力欄の上の道具立て（#128）。左に差し込みボタン、右に書く／プレビュー */
+.editor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.editor-tools {
+  display: flex;
+  gap: 0.25rem;
+}
+
+/*
+  プレビュー。入力欄と高さが揃っていないと、切り替えるたびに
+  下のボタンが飛ぶ。最低限の高さを入力欄に合わせておく。
+*/
+.editor-preview {
+  min-height: 8.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface-2);
 }
 
 .field textarea {

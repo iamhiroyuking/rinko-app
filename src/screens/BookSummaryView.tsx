@@ -393,7 +393,7 @@ export default function BookSummaryView() {
                       </button>
                       <button
                         type="button"
-                        className="quiet-button"
+                        className="quiet-button danger"
                         onClick={handleRevoke}
                         disabled={revoking}
                       >

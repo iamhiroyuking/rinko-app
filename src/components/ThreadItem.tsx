@@ -127,7 +127,11 @@ export default function ThreadItem({
         </div>
         {pagingError && <p className="screen-error">{pagingError}</p>}
         <div className="button-row">
-          <button type="button" className="quiet-button" onClick={onCancelPaging}>
+          <button
+            type="button"
+            className="quiet-button subtle"
+            onClick={onCancelPaging}
+          >
             やめる
           </button>
           <button type="submit" className="secondary-button" disabled={pagingBusy}>

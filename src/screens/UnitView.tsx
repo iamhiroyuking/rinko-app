@@ -440,7 +440,7 @@ export default function UnitView() {
         </Link>
         <button
           type="button"
-          className="quiet-button log-action-button"
+          className="quiet-button danger log-action-button"
           onClick={() => handleDeleteLog(log, replyCount)}
           disabled={deletingLogId === log.id}
         >
