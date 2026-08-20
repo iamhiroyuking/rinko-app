@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
+import MarkdownField from '../components/MarkdownField'
 import {
   createLog,
   getLog,
@@ -251,19 +252,9 @@ export default function AddLogView() {
 
         <div className="field">
           <label htmlFor="body">内容</label>
-          <textarea
-            id="body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={5}
-            required
-          />
-          {/* 案内が無いと気づかれない。書ける記法のうち使う頻度が
-              高いものだけ挙げる（#113） */}
-          <p className="panel-note">
-            行頭に <code>-</code> で箇条書き、
-            <code>**強調**</code> で太字になります。改行はそのままです。
-          </p>
+          {/* 記法の案内（#113）は、押せば挿し込めるボタンと
+              プレビュー（#128）に置き換えた */}
+          <MarkdownField id="body" value={body} onChange={setBody} required />
         </div>
 
         <div className="field-row">
@@ -354,7 +345,7 @@ export default function AddLogView() {
             <div className="button-row">
               <button
                 type="button"
-                className="quiet-button"
+                className="quiet-button subtle"
                 onClick={() => navigate(`/books/${bookId}/units/${unitId}`)}
               >
                 画像なしで進む
