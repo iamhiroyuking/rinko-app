@@ -27,10 +27,10 @@ export default function LandingView() {
 
       <main className="screen-body">
         <div className="screen-heading">
-          <h1>輪講の記録を、みんなで残す</h1>
+          <h1>輪講、どこまで進んだか思い出せますか</h1>
           <p className="screen-description">
-            研究室やゼミの輪講で「どこまで進んだか」「何が分からなかったか」を
-            その場で残して、あとから探せるようにするアプリです。
+            研究室やゼミの輪講のための記録アプリです。
+            進み具合と、その場で出た疑問を残します。
           </p>
         </div>
 
@@ -38,42 +38,61 @@ export default function LandingView() {
           はじめる
         </Link>
 
-        <div className="panel-grid">
-          <section className="panel">
-            <h2 className="panel-title">
-              <IconBookOpen /> 進み具合が分かる
-            </h2>
-            <p className="panel-note">
-              教材ごとに回を並べ、担当者・輪講日・進んだページを持たせます。
-              欠席しても、どこまで進んだかを後から追えます。
-            </p>
-          </section>
+        {/*
+          課題を先に置く。機能から書くと「何ができるか」は伝わるが、
+          「自分の話だ」と思ってもらえない。読む人は輪講をやっている
+          当事者なので、まず心当たりのある場面を出す。
+        */}
+        <section className="lp-section">
+          <h2 className="lp-heading">こういうこと、ありませんか</h2>
+          <ul className="lp-problems">
+            <li>先週どこまで進んだか、誰も正確に覚えていない</li>
+            <li>その場で出た良い質問が、口頭で流れて消えてしまう</li>
+            <li>欠席すると、何をやったのか分からないまま次に進む</li>
+            <li>「あれ、どの回で出た話だっけ」が探せない</li>
+          </ul>
+        </section>
 
-          <section className="panel">
-            <h2 className="panel-title">
-              <IconBookmark /> その場で書いて、あとで探す
-            </h2>
-            <p className="panel-note">
-              輪講中に浮かんだ疑問をそのまま残せます。返信でスレッドになり、
-              ページ順やハッシュタグで読み返せます。
-            </p>
-          </section>
+        <section className="lp-section">
+          <h2 className="lp-heading">このアプリがすること</h2>
+          <div className="panel-grid">
+            <section className="panel">
+              <h3 className="panel-title">
+                <IconBookOpen /> 進み具合が残る
+              </h3>
+              <p className="panel-note">
+                回ごとに担当者・日付・進んだページを持たせます。
+                欠席しても、どこまで進んだかを後から追えます。
+              </p>
+            </section>
 
-          <section className="panel">
-            <h2 className="panel-title">
-              <IconUsers /> 招待リンクで共有
-            </h2>
-            <p className="panel-note">
-              リンクを渡すだけで参加してもらえます。書き込める人と
-              見るだけの人を分けられ、リンクは後から失効できます。
-            </p>
-          </section>
-        </div>
+            <section className="panel">
+              <h3 className="panel-title">
+                <IconBookmark /> 疑問がその場で残る
+              </h3>
+              <p className="panel-note">
+                画面を移らずに書けます。返信でスレッドになるので、
+                その場で答えが出なくても後から続きを話せます。
+              </p>
+            </section>
+
+            <section className="panel">
+              <h3 className="panel-title">
+                <IconUsers /> あとから探せる
+              </h3>
+              <p className="panel-note">
+                ページ順に並べ替えたり、ハッシュタグや本文から探して、
+                その記録まで飛べます。
+              </p>
+            </section>
+          </div>
+        </section>
 
         <div className="objective-card">
-          <span className="objective-label">公開範囲</span>
-          ログインしないと中身は一切見えません。教材は招待リンクを渡した相手にだけ
-          共有され、しおりや本棚の並びは自分にしか見えません。
+          <span className="objective-label">共有と公開範囲</span>
+          招待リンクを渡すだけで参加してもらえます。書き込める人と見るだけの人を
+          分けられ、リンクは後から失効できます。ログインしないと中身は一切見えず、
+          しおりや本棚の並びは自分にしか見えません。
         </div>
 
         <div className="foot-note">

@@ -226,7 +226,11 @@ export default function AddLogView() {
 
       <form className="form" onSubmit={handleSubmit} hidden={loading}>
         <div className="field">
-          <label htmlFor="type">これは何の記録？</label>
+          {/* 他の項目（タイトル・内容・ページ）と同じ名詞で揃える。
+              ここだけ疑問文だとフォームの調子が崩れる（#109 で
+              「種別」を外したときに question 形にしたのを戻した）。
+              「種別」は役所的なので使わない。 */}
+          <label htmlFor="type">記録の種類</label>
           <select
             id="type"
             value={type}

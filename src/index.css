@@ -473,6 +473,32 @@ body {
   min-width: 0;
 }
 
+/*
+  紹介ページ（#114）。ここだけ「読ませる」ページなので、
+  他の画面より節の区切りをはっきりさせる。
+*/
+.lp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.lp-heading {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+/* 課題の列挙。解決より先に置いて、心当たりから入ってもらう */
+.lp-problems {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
 /* 入力欄の上の道具立て（#128）。左に差し込みボタン、右に書く／プレビュー */
 .editor-bar {
   display: flex;
