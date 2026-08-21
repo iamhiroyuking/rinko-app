@@ -119,7 +119,9 @@ export default function MarkdownField({
             <button
               key={String(on)}
               type="button"
-              className={preview === on ? 'status-button selected' : 'status-button'}
+              className={
+                preview === on ? 'status-button selected' : 'status-button'
+              }
               aria-pressed={preview === on}
               onClick={() => setPreview(on)}
             >

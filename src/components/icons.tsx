@@ -50,7 +50,11 @@ export function IconBookmark({
   filled = false,
 }: IconProps & { filled?: boolean }) {
   return (
-    <svg {...BASE} className={className} fill={filled ? 'currentColor' : 'none'}>
+    <svg
+      {...BASE}
+      className={className}
+      fill={filled ? 'currentColor' : 'none'}
+    >
       <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
