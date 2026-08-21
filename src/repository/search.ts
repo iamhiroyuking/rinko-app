@@ -15,6 +15,8 @@ export type SearchableLog = {
   body: string
   /** 記録の種類。絞り込みに使う（#132） */
   type: LogType
+  /** 疑問が解決した時刻。null は未解決、または疑問ではない（#136） */
+  resolvedAt: string | null
   tagNames: string[]
   createdAt: string
   /** 添付画像の枚数。結果に印を出すために数だけ持つ（中身は要らない） */
@@ -70,6 +72,7 @@ export async function listSearchableLogs(
         title: row.title,
         body: row.body,
         type: row.type,
+        resolvedAt: row.resolved_at,
         tagNames: (row.log_tags ?? []).flatMap((link) =>
           link.tags ? [link.tags.name] : [],
         ),
@@ -95,6 +98,8 @@ export type SearchCriteria = {
   types?: LogType[]
   /** 渡すと、しおりの付いたものだけに絞る */
   markedLogIds?: ReadonlySet<string> | null
+  /** true なら未解決の疑問だけ。輪講で溜まるのはここ（#136） */
+  unresolvedOnly?: boolean
 }
 
 /**
@@ -121,13 +126,17 @@ export function filterLogs(
   const byKeyword = needle !== ''
   const byType = types.length > 0
   const byMark = marked !== null
+  const byUnresolved = criteria.unresolvedOnly === true
 
-  if (!byKeyword && !byType && !byMark) return []
+  if (!byKeyword && !byType && !byMark && !byUnresolved) return []
 
   return logs
     .flatMap((log) => {
       if (byMark && !marked.has(log.logId)) return []
       if (byType && !types.includes(log.type)) return []
+      // 未解決は疑問にしか無い概念。種別も一緒に見る
+      if (byUnresolved && (log.type !== 'question' || log.resolvedAt !== null))
+        return []
 
       // どこに当たったかは結果の見せ方に使う。キーワードが無いときは空のまま
       const matchedIn: MatchedIn[] = []

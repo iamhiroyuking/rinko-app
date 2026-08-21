@@ -20,6 +20,7 @@ import {
   listLogs,
   sortThreadsByPage,
   updateLogPages,
+  setLogResolved,
   LOG_ORDER_LABEL,
   type LogEntry,
   type LogOrder,
@@ -65,6 +66,8 @@ export default function UnitView() {
   const [statusError, setStatusError] = useState<string | null>(null)
 
   const [deletingLogId, setDeletingLogId] = useState<string | null>(null)
+  /** 解決の切り替えを送っている記録のid。二重に押せないようにする */
+  const [resolvingLogId, setResolvingLogId] = useState<string | null>(null)
   const [logError, setLogError] = useState<string | null>(null)
 
   /** 自分がしおりを付けているログのid。共有相手のものは入らない */
@@ -415,6 +418,47 @@ export default function UnitView() {
     }
   }
 
+  /**
+   * 疑問を解決済みにする／戻す。
+   *
+   * 押した手応えを待たせたくないので、先に画面を変えてから送る。
+   * 失敗したら元に戻す（しおりと同じ考え方）。
+   */
+  async function toggleResolved(log: LogEntry) {
+    const next = log.resolvedAt ? null : new Date().toISOString()
+
+    setLogError(null)
+    setResolvingLogId(log.id)
+    setState((prev) =>
+      prev.status === 'ok'
+        ? {
+            ...prev,
+            logs: prev.logs.map((l) =>
+              l.id === log.id ? { ...l, resolvedAt: next } : l,
+            ),
+          }
+        : prev,
+    )
+
+    try {
+      await setLogResolved(log.id, next !== null)
+    } catch (caught: unknown) {
+      setState((prev) =>
+        prev.status === 'ok'
+          ? {
+              ...prev,
+              logs: prev.logs.map((l) =>
+                l.id === log.id ? { ...l, resolvedAt: log.resolvedAt } : l,
+              ),
+            }
+          : prev,
+      )
+      setLogError(errorMessage(caught))
+    } finally {
+      setResolvingLogId(null)
+    }
+  }
+
   function ownLogActions(log: LogEntry, replyCount: number) {
     if (!canEdit) return null
     if (log.authorId !== session?.user.id) return null
@@ -430,6 +474,17 @@ export default function UnitView() {
             onClick={() => openPaging(log)}
           >
             ページを入れる
+          </button>
+        )}
+        {/* 疑問にだけ出す。解決したかを決めるのは書いた本人（#136） */}
+        {log.type === 'question' && (
+          <button
+            type="button"
+            className="quiet-button log-action-button"
+            onClick={() => toggleResolved(log)}
+            disabled={resolvingLogId === log.id}
+          >
+            {log.resolvedAt ? '未解決に戻す' : '解決した'}
           </button>
         )}
         <Link

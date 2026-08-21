@@ -31,6 +31,11 @@ export type LogEntry = {
   pageStart: number | null
   pageEnd: number | null
   createdAt: string
+  /**
+   * 疑問が解決した時刻（#136）。
+   * null は「未解決」または「疑問ではない」。種別と合わせて見る。
+   */
+  resolvedAt: string | null
   tagNames: string[]
   /** 添付画像。表示に使う期限付きURLは signAttachments で後から付ける */
   attachments: Attachment[]
@@ -63,6 +68,7 @@ function toLogEntry(row: LogRowWithTags): LogEntry {
     pageStart: row.page_start,
     pageEnd: row.page_end,
     createdAt: row.created_at,
+    resolvedAt: row.resolved_at,
     tagNames: (row.log_tags ?? []).flatMap((link) =>
       link.tags ? [link.tags.name] : [],
     ),
@@ -343,6 +349,53 @@ export async function updateLogPages(
     .eq('id', logId)
 
   if (error) throw error
+}
+
+/**
+ * 疑問を解決済みにする／戻す（#136）。
+ *
+ * 押せるのは投稿者だけ。疑問はその人のものなので、解決したかを
+ * 決めるのも本人でよい。「自分の記録だけ編集・削除できる」という
+ * 既存の非対称性に合わせている。
+ *
+ * 権限のための新しいポリシーは要らない。logs の更新は既に投稿者だけに
+ * 制限され、WITH CHECK も入っている（20260814150000_tighten_log_update.sql）。
+ */
+export async function setLogResolved(
+  logId: string,
+  resolved: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from('logs')
+    .update({ resolved_at: resolved ? new Date().toISOString() : null })
+    .eq('id', logId)
+
+  if (error) throw error
+}
+
+/**
+ * その教材に残っている未解決の疑問を数える。
+ *
+ * 輪講の価値がいちばん溜まるところなので、概要から見えるようにする。
+ * `units!inner` を忘れると教材をまたいで数える（#90 で踏んだ形）。
+ * ゴミ箱に入れた回の疑問は、画面から消えている以上ここでも数えない。
+ */
+export async function countUnresolvedQuestions(
+  bookId: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('logs')
+    .select('id, units!inner (book_id, deleted_at)', {
+      count: 'exact',
+      head: true,
+    })
+    .eq('units.book_id', bookId)
+    .is('units.deleted_at', null)
+    .eq('type', 'question')
+    .is('resolved_at', null)
+
+  if (error) throw error
+  return count ?? 0
 }
 
 /**
