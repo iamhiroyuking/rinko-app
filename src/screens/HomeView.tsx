@@ -205,7 +205,15 @@ export default function HomeView() {
     <ScreenFrame
       title="本棚"
       width="wide"
-      description={`${SHELF_STATUS_LABEL[shelfStatus]}の教材が並びます。`}
+      /*
+        説明は画面の中身に合わせる。「次にやること」を上に出したので、
+        「教材が並びます」だけだと直後に来るものと噛み合わない。
+      */
+      description={
+        upcoming.length > 0 && shelfStatus === MAIN_SHELF
+          ? '次にやることと、学習中の教材。'
+          : `${SHELF_STATUS_LABEL[shelfStatus]}の教材が並びます。`
+      }
       // ヘッダーの操作。押させたいものではないので控えめのまま
       headerAction={
         <button
@@ -274,12 +282,16 @@ export default function HomeView() {
                     <span className="upcoming-meta">
                       {item.scheduledDate ?? '日程未定'}
                       {item.presenterName && <> ・ {item.presenterName}</>}
+                      {/* 担当は準備が要る側。ただし書名の行に割り込ませると
+                          長い書名が押し出されるので、日付と同じ行に置く */}
+                      {item.isMine && (
+                        <>
+                          {' '}
+                          <span className="new-badge">あなたの担当</span>
+                        </>
+                      )}
                     </span>
                   </span>
-                  {/* 担当は準備が要る側。思い出させる価値がいちばん高い */}
-                  {item.isMine && (
-                    <span className="new-badge">あなたの担当</span>
-                  )}
                 </Link>
               </li>
             ))}
