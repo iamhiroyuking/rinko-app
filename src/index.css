@@ -487,10 +487,21 @@ body {
   次にやること（#135）。教材をまたいで、近い順に並べる。
   本棚の上に置くが、主役は本棚なので枠で囲って区切るだけにとどめる。
 */
+/*
+  面を敷いて本棚と切り離す。
+
+  画面の間隔は一律なので、そのまま並べると本棚の一部に見える。
+  見出しを足して階層で分ける手もあるが、h1 が「本棚」なので
+  グリッド側に見出しを付けると同じことを二度言うことになる。
+  背景で「別のまとまり」と示す方が言葉を増やさずに済む。
+*/
 .upcoming {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  padding: 0.85rem;
+  border-radius: 0.6rem;
+  background: var(--surface-2);
 }
 
 .upcoming-list {
@@ -502,13 +513,15 @@ body {
   gap: 0.4rem;
 }
 
+/* 面の上に置くので、行そのものは背景色で浮かせる。枠を二重にしない */
 .upcoming-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: var(--bg);
   color: var(--fg);
   text-decoration: none;
 }
