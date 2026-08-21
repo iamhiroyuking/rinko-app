@@ -21,6 +21,7 @@ function log(
     pageStart: null,
     pageEnd: null,
     createdAt,
+    resolvedAt: null,
     tagNames: [],
     attachments: [],
   }
