@@ -96,10 +96,7 @@ export default function ThreadItem({
         autoFocus
       />
     ) : pagingLogId === rootId ? (
-      <form
-        className="paging-form"
-        onSubmit={(e) => onSubmitPaging(e, rootId)}
-      >
+      <form className="paging-form" onSubmit={(e) => onSubmitPaging(e, rootId)}>
         <div className="field-row">
           <div className="field">
             <label htmlFor={`ps-${rootId}`}>開始ページ</label>
@@ -134,7 +131,11 @@ export default function ThreadItem({
           >
             やめる
           </button>
-          <button type="submit" className="secondary-button" disabled={pagingBusy}>
+          <button
+            type="submit"
+            className="secondary-button"
+            disabled={pagingBusy}
+          >
             {pagingBusy ? '保存中…' : 'ページを保存'}
           </button>
         </div>
@@ -197,7 +198,9 @@ export default function ThreadItem({
                     isMarked={markedLogIds.has(reply.id)}
                     onToggleMark={() => onToggleMark(reply.id)}
                     footer={
-                      <div className="log-actions">{ownLogActions(reply, 0)}</div>
+                      <div className="log-actions">
+                        {ownLogActions(reply, 0)}
+                      </div>
                     }
                   />
                 </li>

@@ -7,11 +7,19 @@ import {
   filterLogs,
   listSearchableLogs,
   topTagNames,
-  type MatchedIn,
   type SearchableLog,
 } from '../repository/search'
+import { LOG_TYPE_LABEL, type LogType } from '../repository/logs'
 import { listMyMarksInBook } from '../repository/marks'
 import { errorMessage } from '../lib/errorMessage'
+
+/**
+ * 絞り込みに出す種類。
+ *
+ * `none`（指定しない）は入れない。付けていない記録が最も多く、
+ * それで絞っても「種類を選ばなかったもの」が並ぶだけで探した気にならない。
+ */
+const FILTERABLE_TYPES: LogType[] = ['preview', 'question', 'review']
 
 type LoadState =
   | { status: 'loading' }
@@ -58,6 +66,20 @@ export default function SearchView() {
   /** 自分がしおりを付けているログのid。共有相手のものは入らない */
   const [markedLogIds, setMarkedLogIds] = useState<Set<string>>(() => new Set())
   const [markedOnly, setMarkedOnly] = useState(false)
+
+  /**
+   * 絞り込む種類。空ならすべて。
+   *
+   * 「指定しない」は出していない。付けていない記録が最も多く、
+   * それで絞っても「種類を選ばなかったもの」が並ぶだけで探した気にならない。
+   */
+  const [types, setTypes] = useState<LogType[]>([])
+
+  function toggleType(type: LogType) {
+    setTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    )
+  }
 
   useEffect(() => {
     if (!bookId) return
@@ -108,28 +130,51 @@ export default function SearchView() {
   const members = state.status === 'ok' ? state.members : NO_MEMBERS
 
   const tags = useMemo(() => topTagNames(logs), [logs])
-  const allHits = useMemo(() => filterLogs(logs, query), [logs, query])
+
+  /*
+    3つの軸（キーワード・種類・しおり）はすべて filterLogs が扱う。
+    キーワードが空でも、種類やしおりだけで一覧として意味がある。
+    「後で振り返りたいものを並べる」のがしおりの目的で、種類も同じ。
+  */
+  const hits = useMemo(
+    () =>
+      filterLogs(logs, {
+        query,
+        types,
+        markedLogIds: markedOnly ? markedLogIds : null,
+      }),
+    [logs, query, types, markedOnly, markedLogIds],
+  )
+
+  /** 何かで絞っているか。空の画面に出す文言を変えるために見る */
+  const filtering = query.trim() !== '' || types.length > 0 || markedOnly
 
   /**
-   * しおりだけに絞る。キーワードとは別の軸なので、検索の結果に後からかける。
+   * 見つからなかったときの文言。
    *
-   * キーワードが空でも、しおりだけなら一覧として意味がある。
-   * 「後で振り返りたいものを並べる」のがしおりの目的なので、
-   * 言葉を思い出せなくても開けるようにしておく。
+   * 軸が3つあるので、入れ子の三項演算子で書くと読めなくなる。
+   * 「何で絞ったか」を組み立てて、そこに一致しなかったことを伝える。
    */
-  const hits = useMemo(() => {
-    if (!markedOnly) return allHits
-    if (query.trim() !== '') {
-      return allHits.filter((hit) => markedLogIds.has(hit.logId))
+  function emptyMessage(): string {
+    const keyword = query.trim()
+    const scopes: string[] = []
+    if (markedOnly) scopes.push('しおりを付けた記録')
+    if (types.length > 0) {
+      scopes.push(types.map((t) => LOG_TYPE_LABEL[t]).join('・'))
     }
-    return logs
-      .filter((log) => markedLogIds.has(log.logId))
-      .map((log) => ({ ...log, matchedIn: [] as MatchedIn[] }))
-      .sort(
-        (a, b) =>
-          a.unitOrder - b.unitOrder || a.createdAt.localeCompare(b.createdAt),
-      )
-  }, [allHits, logs, markedOnly, markedLogIds, query])
+
+    if (scopes.length === 0) {
+      return `「${keyword}」に一致する記録は見つかりませんでした。`
+    }
+
+    const scope = scopes.join(' と ')
+    if (keyword === '') {
+      return markedOnly && types.length === 0
+        ? 'しおりを付けた記録はまだありません。記録の右上から付けられます。'
+        : `${scope}の記録はまだありません。`
+    }
+    return `${scope}に「${keyword}」は見つかりませんでした。`
+  }
 
   const nameOf = (userId: string) =>
     members.find((m) => m.userId === userId)?.displayName ?? '不明'
@@ -152,7 +197,8 @@ export default function SearchView() {
         />
       </div>
 
-      {/* しおりはキーワードとは別の軸なので、入力欄と並べず下に置く */}
+      {/* しおりと種類はキーワードとは別の軸なので、入力欄と並べず下に置く。
+          どれも押した分だけ絞り込む（種類は複数選べる） */}
       <div className="status-choice">
         <button
           type="button"
@@ -162,6 +208,20 @@ export default function SearchView() {
         >
           <IconBookmark filled /> しおりだけ（{markedLogIds.size}）
         </button>
+
+        {FILTERABLE_TYPES.map((type) => (
+          <button
+            key={type}
+            type="button"
+            className={
+              types.includes(type) ? 'status-button selected' : 'status-button'
+            }
+            aria-pressed={types.includes(type)}
+            onClick={() => toggleType(type)}
+          >
+            {LOG_TYPE_LABEL[type]}
+          </button>
+        ))}
       </div>
 
       {state.status === 'loading' && (
@@ -192,18 +252,12 @@ export default function SearchView() {
             </section>
           )}
 
-          {query.trim() === '' && !markedOnly ? (
+          {!filtering ? (
             <p className="empty-state">
-              キーワードを入力するか、上のハッシュタグを押してください。
+              キーワードを入力するか、上のハッシュタグや絞り込みを押してください。
             </p>
           ) : hits.length === 0 ? (
-            <p className="empty-state">
-              {markedOnly && query.trim() === ''
-                ? 'しおりを付けた記録はまだありません。記録の右上から付けられます。'
-                : markedOnly
-                  ? `しおりを付けた記録に「${query.trim()}」は見つかりませんでした。`
-                  : `「${query.trim()}」に一致する記録は見つかりませんでした。`}
-            </p>
+            <p className="empty-state">{emptyMessage()}</p>
           ) : (
             <>
               <p className="screen-param">{hits.length}件</p>

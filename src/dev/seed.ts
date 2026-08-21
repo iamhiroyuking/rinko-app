@@ -23,7 +23,7 @@ import {
 } from '../repository/books'
 import { listShelfBooks } from '../repository/books'
 import { createUnit } from '../repository/units'
-import { createLog } from '../repository/logs'
+import { createLog, type LogType } from '../repository/logs'
 import { uploadLogImages } from '../repository/attachments'
 
 /**
@@ -33,6 +33,14 @@ import { uploadLogImages } from '../repository/attachments'
  * 実際の教材まで巻き込んで消しかねない。
  */
 const SEED_PREFIX = '[seed]'
+
+/**
+ * 記録に順ぐりに付ける種類。
+ *
+ * 全部「指定しない」で作っていると、種類での絞り込み（#132）を
+ * 確かめられない。ばらけさせておく。
+ */
+const SEED_TYPES: LogType[] = ['none', 'preview', 'question', 'review']
 
 export type SeedOptions = {
   /** 教材名。目印は自動で付く */
@@ -97,9 +105,10 @@ export async function seed(options: SeedOptions = {}): Promise<SeedResult> {
     unitIds.push(unitId)
 
     for (let logIndex = 1; logIndex <= logsPerUnit; logIndex += 1) {
+      const type = SEED_TYPES[(logIndex - 1) % SEED_TYPES.length]
       const logId = await createLog({
         unitId,
-        type: 'none',
+        type,
         body: `検証用の記録 ${unitIndex}-${logIndex}`,
         tagNames: [`検証タグ${logIndex}`],
       })

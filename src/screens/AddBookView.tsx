@@ -235,7 +235,9 @@ export default function AddBookView() {
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
                 rows={3}
-                placeholder={'例: 10月末までに5章まで読み切る\n演習問題を全部解く'}
+                placeholder={
+                  '例: 10月末までに5章まで読み切る\n演習問題を全部解く'
+                }
               />
             </div>
 
