@@ -12,6 +12,7 @@ import {
 import { LOG_TYPE_LABEL, type LogType } from '../repository/logs'
 import { listMyMarksInBook } from '../repository/marks'
 import { errorMessage } from '../lib/errorMessage'
+import { toPlainText } from '../lib/plainText'
 
 /**
  * 絞り込みに出す種類。
@@ -321,7 +322,7 @@ export default function SearchView() {
                         </span>
                       )}
                       <span className="log-body">
-                        <Excerpt text={hit.body} query={query} />
+                        <Excerpt text={toPlainText(hit.body)} query={query} />
                       </span>
                       {hit.tagNames.length > 0 && (
                         <span className="tag-row">
