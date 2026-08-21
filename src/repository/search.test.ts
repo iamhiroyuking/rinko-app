@@ -172,7 +172,9 @@ describe('filterLogs', () => {
     ).toEqual(['未解決'])
   })
 
-  it('未解決と種類を同時に指定しても矛盾しない', () => {
+  // 画面では両方を同時に選べないようにしてある（#132 / #136）。
+  // ここは万一渡ってきたときに、静かに広く返さないための守り
+  it('未解決と噛み合わない種類が来たら、広げずに空を返す', () => {
     const logs = [
       searchable({ logId: '未解決の疑問', type: 'question' }),
       searchable({ logId: '復習', type: 'review' }),

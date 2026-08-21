@@ -78,10 +78,28 @@ export default function SearchView() {
   /** 未解決の疑問だけに絞る（#136） */
   const [unresolvedOnly, setUnresolvedOnly] = useState(false)
 
+  /*
+    種類と「未解決の疑問」は同時に選べない。
+
+    種類は複数選ぶと「どれか」（OR）だが、未解決は「かつ未解決」（AND）で
+    効く。混ぜると「未解決の疑問」＋「予習メモ」のように、**どうやっても
+    0件にしかならない組み合わせ**を作れてしまう。
+    選べてしまうこと自体が誤りなので、片方を選んだらもう片方を解く。
+
+    しおりはどの種類にも付くので、こちらとは独立したまま。
+  */
   function toggleType(type: LogType) {
+    setUnresolvedOnly(false)
     setTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
     )
+  }
+
+  function toggleUnresolved() {
+    setUnresolvedOnly((on) => {
+      if (!on) setTypes([])
+      return !on
+    })
   }
 
   useEffect(() => {
@@ -221,7 +239,7 @@ export default function SearchView() {
             unresolvedOnly ? 'status-button selected' : 'status-button'
           }
           aria-pressed={unresolvedOnly}
-          onClick={() => setUnresolvedOnly((on) => !on)}
+          onClick={toggleUnresolved}
         >
           未解決の疑問
         </button>
