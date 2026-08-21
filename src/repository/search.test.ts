@@ -11,6 +11,7 @@ function searchable(
     authorId: 'me',
     title: null,
     body: '',
+    type: 'none',
     tagNames: [],
     createdAt: '2026-08-01T00:00:00Z',
     attachmentCount: 0,
@@ -19,10 +20,12 @@ function searchable(
 }
 
 describe('filterLogs', () => {
-  it('キーワードが空なら何も返さない', () => {
+  it('条件が1つも無ければ何も返さない', () => {
     const logs = [searchable({ logId: 'a', body: '正則化' })]
-    expect(filterLogs(logs, '')).toEqual([])
-    expect(filterLogs(logs, '   ')).toEqual([])
+    expect(filterLogs(logs, { query: '' })).toEqual([])
+    expect(filterLogs(logs, { query: '   ' })).toEqual([])
+    expect(filterLogs(logs, {})).toEqual([])
+    expect(filterLogs(logs, { types: [] })).toEqual([])
   })
 
   it('タイトル・本文・タグのどこに一致したかを持つ', () => {
@@ -31,7 +34,7 @@ describe('filterLogs', () => {
       searchable({ logId: 'body', body: '正則化について' }),
       searchable({ logId: 'tag', body: '無関係', tagNames: ['正則化'] }),
     ]
-    const hits = filterLogs(logs, '正則化')
+    const hits = filterLogs(logs, { query: '正則化' })
     expect(hits.map((h) => h.logId).sort()).toEqual(['body', 'tag', 'title'])
     expect(hits.find((h) => h.logId === 'title')?.matchedIn).toEqual(['title'])
     expect(hits.find((h) => h.logId === 'tag')?.matchedIn).toEqual(['tag'])
@@ -41,18 +44,21 @@ describe('filterLogs', () => {
     const logs = [
       searchable({ logId: 'a', title: '過学習', body: '過学習とは' }),
     ]
-    expect(filterLogs(logs, '過学習')[0].matchedIn).toEqual(['title', 'body'])
+    expect(filterLogs(logs, { query: '過学習' })[0].matchedIn).toEqual([
+      'title',
+      'body',
+    ])
   })
 
   it('大文字と小文字を区別しない', () => {
     const logs = [searchable({ logId: 'a', body: 'Regularization' })]
-    expect(filterLogs(logs, 'regularization')).toHaveLength(1)
-    expect(filterLogs(logs, 'REGULARIZATION')).toHaveLength(1)
+    expect(filterLogs(logs, { query: 'regularization' })).toHaveLength(1)
+    expect(filterLogs(logs, { query: 'REGULARIZATION' })).toHaveLength(1)
   })
 
   it('一致しなければ返さない', () => {
     const logs = [searchable({ logId: 'a', body: '正則化' })]
-    expect(filterLogs(logs, '確率')).toEqual([])
+    expect(filterLogs(logs, { query: '確率' })).toEqual([])
   })
 
   it('回の順、同じ回では古い順に並ぶ', () => {
@@ -76,11 +82,83 @@ describe('filterLogs', () => {
         createdAt: '2026-08-09T00:00:00Z',
       }),
     ]
-    expect(filterLogs(logs, 'あ').map((h) => h.logId)).toEqual([
+    expect(filterLogs(logs, { query: 'あ' }).map((h) => h.logId)).toEqual([
       '1回目',
       '2回目の古い方',
       '2回目の新しい方',
     ])
+  })
+
+  it('キーワードが無くても種類だけで絞れる', () => {
+    const logs = [
+      searchable({ logId: 'q', type: 'question', body: '無関係' }),
+      searchable({ logId: 'r', type: 'review', body: '無関係' }),
+      searchable({ logId: 'n', type: 'none', body: '無関係' }),
+    ]
+    expect(
+      filterLogs(logs, { types: ['question'] }).map((h) => h.logId),
+    ).toEqual(['q'])
+  })
+
+  it('種類は複数選べる', () => {
+    const logs = [
+      searchable({ logId: 'p', type: 'preview' }),
+      searchable({ logId: 'q', type: 'question' }),
+      searchable({ logId: 'r', type: 'review' }),
+    ]
+    const hits = filterLogs(logs, { types: ['preview', 'review'] })
+    expect(hits.map((h) => h.logId).sort()).toEqual(['p', 'r'])
+  })
+
+  it('キーワードが無いときは matchedIn が空になる', () => {
+    const logs = [searchable({ logId: 'q', type: 'question', body: '正則化' })]
+    expect(filterLogs(logs, { types: ['question'] })[0].matchedIn).toEqual([])
+  })
+
+  it('キーワードと種類は両方に当てはまるものだけ返す', () => {
+    const logs = [
+      searchable({ logId: '疑問で一致', type: 'question', body: '正則化' }),
+      searchable({ logId: '疑問だが不一致', type: 'question', body: '確率' }),
+      searchable({ logId: '一致だが復習', type: 'review', body: '正則化' }),
+    ]
+    expect(
+      filterLogs(logs, { query: '正則化', types: ['question'] }).map(
+        (h) => h.logId,
+      ),
+    ).toEqual(['疑問で一致'])
+  })
+
+  it('しおりだけに絞れる。キーワードが無くても一覧になる', () => {
+    const logs = [
+      searchable({ logId: 'a', body: '正則化' }),
+      searchable({ logId: 'b', body: '正則化' }),
+    ]
+    const marked = new Set(['b'])
+    expect(
+      filterLogs(logs, { markedLogIds: marked }).map((h) => h.logId),
+    ).toEqual(['b'])
+  })
+
+  it('しおりと種類とキーワードを重ねられる', () => {
+    const logs = [
+      searchable({ logId: '全部満たす', type: 'question', body: '正則化' }),
+      searchable({ logId: 'しおり無し', type: 'question', body: '正則化' }),
+      searchable({ logId: '種類違い', type: 'review', body: '正則化' }),
+      searchable({ logId: '語が違う', type: 'question', body: '確率' }),
+    ]
+    const marked = new Set(['全部満たす', '種類違い', '語が違う'])
+    expect(
+      filterLogs(logs, {
+        query: '正則化',
+        types: ['question'],
+        markedLogIds: marked,
+      }).map((h) => h.logId),
+    ).toEqual(['全部満たす'])
+  })
+
+  it('しおりが1つも無ければ何も返さない', () => {
+    const logs = [searchable({ logId: 'a', body: '正則化' })]
+    expect(filterLogs(logs, { markedLogIds: new Set<string>() })).toEqual([])
   })
 })
 
