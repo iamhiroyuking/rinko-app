@@ -15,7 +15,11 @@ import {
 } from '../repository/books'
 import { signPaths } from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
-import { countNewLogs } from '../repository/activity'
+import {
+  countNewLogs,
+  listUpcoming,
+  type UpcomingUnit,
+} from '../repository/activity'
 
 type LoadState =
   | { status: 'loading' }
@@ -71,7 +75,27 @@ export default function HomeView() {
     () => new Map(),
   )
 
+  /** 教材をまたいだ「次にやること」（#135）。主役の本棚にいるときだけ出す */
+  const [upcoming, setUpcoming] = useState<UpcomingUnit[]>([])
+
   const userId = session?.user.id
+
+  useEffect(() => {
+    if (shelfStatus !== MAIN_SHELF) return
+    let cancelled = false
+
+    listUpcoming()
+      .then((items) => {
+        if (!cancelled) setUpcoming(items)
+      })
+      .catch(() => {
+        // 予定が出ないだけ。本棚は読める
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId, shelfStatus])
 
   // 新着は本棚とは別に取る。数が出なくても本棚は読めるので画面は止めない
   useEffect(() => {
@@ -226,6 +250,41 @@ export default function HomeView() {
         <p className="screen-error">
           プロフィールが見つかりません（サインアップ時のトリガーが動いていない可能性があります）
         </p>
+      )}
+
+      {/*
+        次にやること（#135）。本棚の上に足すのであって、置き換えない。
+        予定が無いときは何も出さない（空の枠を置くと毎回目に入る）。
+      */}
+      {upcoming.length > 0 && shelfStatus === MAIN_SHELF && (
+        <section className="upcoming">
+          <h2 className="lp-heading">次にやること</h2>
+          <ul className="upcoming-list">
+            {upcoming.map((item) => (
+              <li key={item.unitId}>
+                <Link
+                  className="upcoming-row"
+                  to={`/books/${item.bookId}/units/${item.unitId}`}
+                >
+                  <span className="upcoming-main">
+                    <span className="upcoming-book">{item.bookTitle}</span>
+                    <span className="upcoming-title">
+                      第{item.order}回　{item.title}
+                    </span>
+                    <span className="upcoming-meta">
+                      {item.scheduledDate ?? '日程未定'}
+                      {item.presenterName && <> ・ {item.presenterName}</>}
+                    </span>
+                  </span>
+                  {/* 担当は準備が要る側。思い出させる価値がいちばん高い */}
+                  {item.isMine && (
+                    <span className="new-badge">あなたの担当</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {state.status === 'ok' && (
