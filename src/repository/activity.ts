@@ -107,6 +107,117 @@ export async function countNewLogsByUnit(
   return counts
 }
 
+/** 本棚をまたいだ「次にやること」の1行 */
+export type UpcomingUnit = {
+  bookId: string
+  bookTitle: string
+  unitId: string
+  order: number
+  title: string
+  scheduledDate: string | null
+  presenterName: string | null
+  /** 自分が担当か。準備が要る側なので目立たせる */
+  isMine: boolean
+}
+
+/**
+ * 教材ごとの「次にやる回」を、本棚をまたいで集める（#135）。
+ *
+ * `HomeView` は表紙と書名しか出しておらず、日付も担当も見えなかった。
+ * 教材が増えると、どれが今週なのかを横断して見る場所が無い。
+ *
+ * **「学習中」の教材だけ**を対象にする。今やっていない教材の予定は雑音。
+ * 完了した回は出さない。
+ */
+export async function listUpcoming(): Promise<UpcomingUnit[]> {
+  const userId = await myUserId()
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from('memberships')
+    .select('book_id')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .eq('shelf_status', 'reading')
+
+  if (membershipError) throw membershipError
+
+  const bookIds = (memberships ?? []).map((row) => row.book_id)
+  if (bookIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('units')
+    .select(
+      'id, order, title, scheduled_date, presenter_id, book_id, books (title)',
+    )
+    .in('book_id', bookIds)
+    .is('deleted_at', null)
+    .neq('status', 'done')
+    .order('order')
+
+  if (error) throw error
+
+  // 担当者の名前は別に引く。回ごとに profiles を結合すると同じ人を何度も返す
+  const presenterIds = [
+    ...new Set(
+      (data ?? []).flatMap((row) =>
+        row.presenter_id ? [row.presenter_id] : [],
+      ),
+    ),
+  ]
+  const names = new Map<string, string>()
+  if (presenterIds.length > 0) {
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', presenterIds)
+
+    if (profileError) throw profileError
+    for (const p of profiles ?? []) names.set(p.id, p.display_name)
+  }
+
+  // 教材ごとに先頭の1件だけ。order 順に並べてあるので最初に来たものが次
+  const firstPerBook = new Map<string, UpcomingUnit>()
+  for (const row of data ?? []) {
+    if (firstPerBook.has(row.book_id)) continue
+    if (!row.books) continue
+
+    firstPerBook.set(row.book_id, {
+      bookId: row.book_id,
+      bookTitle: row.books.title,
+      unitId: row.id,
+      order: row.order,
+      title: row.title,
+      scheduledDate: row.scheduled_date,
+      presenterName: row.presenter_id
+        ? (names.get(row.presenter_id) ?? '不明')
+        : null,
+      isMine: row.presenter_id === userId,
+    })
+  }
+
+  return sortUpcoming([...firstPerBook.values()])
+}
+
+/**
+ * 近い順に並べる。
+ *
+ * 日程が決まっているものが先。決まっていないものは「いつやるか未定」なので、
+ * 日付が入っているものより後ろへ置く。同着は書名で固定して並びを揺らさない。
+ */
+export function sortUpcoming(items: UpcomingUnit[]): UpcomingUnit[] {
+  return [...items].sort((a, b) => {
+    if (a.scheduledDate && b.scheduledDate) {
+      return (
+        a.scheduledDate.localeCompare(b.scheduledDate) ||
+        a.bookTitle.localeCompare(b.bookTitle)
+      )
+    }
+    if (a.scheduledDate) return -1
+    if (b.scheduledDate) return 1
+    return a.bookTitle.localeCompare(b.bookTitle)
+  })
+}
+
 /** その教材を前回見た時刻。回ごとの印を出すのに使う */
 export async function getSeenAt(bookId: string): Promise<string | null> {
   const userId = await myUserId()
