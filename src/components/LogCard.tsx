@@ -62,6 +62,10 @@ export default function LogCard({
         {log.type !== 'none' && (
           <span className="log-type">{LOG_TYPE_LABEL[log.type]}</span>
         )}
+        {/* 解決したかは疑問にしか無い概念。ただのメモには出さない（#136） */}
+        {log.type === 'question' && log.resolvedAt && (
+          <span className="log-resolved">解決済み</span>
+        )}
         {pages && <span className="log-page">{pages}</span>}
         <span className="log-time">{formatTimestamp(log.createdAt)}</span>
         {/* しおりは自分だけのもの。共有相手の画面には出ない */}

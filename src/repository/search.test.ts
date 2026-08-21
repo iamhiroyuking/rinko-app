@@ -12,6 +12,7 @@ function searchable(
     title: null,
     body: '',
     type: 'none',
+    resolvedAt: null,
     tagNames: [],
     createdAt: '2026-08-01T00:00:00Z',
     attachmentCount: 0,
@@ -154,6 +155,31 @@ describe('filterLogs', () => {
         markedLogIds: marked,
       }).map((h) => h.logId),
     ).toEqual(['全部満たす'])
+  })
+
+  it('未解決の疑問だけに絞れる', () => {
+    const logs = [
+      searchable({ logId: '未解決', type: 'question', resolvedAt: null }),
+      searchable({
+        logId: '解決済み',
+        type: 'question',
+        resolvedAt: '2026-08-20T00:00:00Z',
+      }),
+      searchable({ logId: '疑問ではない', type: 'review', resolvedAt: null }),
+    ]
+    expect(
+      filterLogs(logs, { unresolvedOnly: true }).map((h) => h.logId),
+    ).toEqual(['未解決'])
+  })
+
+  it('未解決と種類を同時に指定しても矛盾しない', () => {
+    const logs = [
+      searchable({ logId: '未解決の疑問', type: 'question' }),
+      searchable({ logId: '復習', type: 'review' }),
+    ]
+    expect(
+      filterLogs(logs, { unresolvedOnly: true, types: ['review'] }),
+    ).toEqual([])
   })
 
   it('しおりが1つも無ければ何も返さない', () => {

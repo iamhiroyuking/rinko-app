@@ -473,6 +473,16 @@ body {
   min-width: 0;
 }
 
+/* 解決済みの疑問（#136）。済んだことなので、種別の札より控えめに出す */
+.log-resolved {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--done-bg);
+  color: var(--done);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
 /*
   次にやること（#135）。教材をまたいで、近い順に並べる。
   本棚の上に置くが、主役は本棚なので枠で囲って区切るだけにとどめる。

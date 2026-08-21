@@ -13,7 +13,7 @@ import {
   type ShelfStatus,
 } from '../repository/books'
 import { listBookMembers, type BookMember } from '../repository/members'
-import { countBookLogs } from '../repository/logs'
+import { countBookLogs, countUnresolvedQuestions } from '../repository/logs'
 import { findNextUnit, listUnits, type Unit } from '../repository/units'
 import {
   getInviteToken,
@@ -38,6 +38,8 @@ type LoadState =
       viewerToken: string | null
       shelfEntry: MyShelfEntry | null
       logCount: number
+      /** 未解決の疑問（#136）。輪講の価値がいちばん溜まるところ */
+      unresolvedCount: number
       unitCount: number
       nextUnit: Unit | null
     }
@@ -68,16 +70,25 @@ export default function BookSummaryView() {
     setState({ status: 'loading' })
 
     const load = async () => {
-      const [book, members, token, viewerToken, shelfEntry, logCount, units] =
-        await Promise.all([
-          getBook(bookId),
-          listBookMembers(bookId),
-          getInviteToken(bookId, 'editor'),
-          getInviteToken(bookId, 'viewer'),
-          getMyShelfEntry(bookId),
-          countBookLogs(bookId),
-          listUnits(bookId),
-        ])
+      const [
+        book,
+        members,
+        token,
+        viewerToken,
+        shelfEntry,
+        logCount,
+        units,
+        unresolvedCount,
+      ] = await Promise.all([
+        getBook(bookId),
+        listBookMembers(bookId),
+        getInviteToken(bookId, 'editor'),
+        getInviteToken(bookId, 'viewer'),
+        getMyShelfEntry(bookId),
+        countBookLogs(bookId),
+        listUnits(bookId),
+        countUnresolvedQuestions(bookId),
+      ])
       return {
         book,
         members,
@@ -85,6 +96,7 @@ export default function BookSummaryView() {
         viewerToken,
         shelfEntry,
         logCount,
+        unresolvedCount,
         unitCount: units.length,
         nextUnit: findNextUnit(units),
       }
@@ -335,6 +347,18 @@ export default function BookSummaryView() {
                 <div className="stat">
                   <dt>記録の数</dt>
                   <dd>{state.status === 'ok' ? `${state.logCount}件` : '—'}</dd>
+                </div>
+                {/* 未解決の疑問（#136）。0件のときは出さない。
+                    「無い」ことをわざわざ言うと、毎回目に入って雑音になる */}
+                <div className="stat">
+                  <dt>未解決の疑問</dt>
+                  <dd>
+                    {state.status === 'ok'
+                      ? state.unresolvedCount > 0
+                        ? `${state.unresolvedCount}件`
+                        : 'なし'
+                      : '—'}
+                  </dd>
                 </div>
               </dl>
             </section>

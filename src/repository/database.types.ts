@@ -226,6 +226,7 @@ export type Database = {
           page_end: number | null
           page_start: number | null
           parent_log_id: string | null
+          resolved_at: string | null
           title: string | null
           type: string
           unit_id: string
@@ -239,6 +240,7 @@ export type Database = {
           page_end?: number | null
           page_start?: number | null
           parent_log_id?: string | null
+          resolved_at?: string | null
           title?: string | null
           type?: string
           unit_id: string
@@ -252,6 +254,7 @@ export type Database = {
           page_end?: number | null
           page_start?: number | null
           parent_log_id?: string | null
+          resolved_at?: string | null
           title?: string | null
           type?: string
           unit_id?: string

@@ -75,6 +75,9 @@ export default function SearchView() {
    */
   const [types, setTypes] = useState<LogType[]>([])
 
+  /** 未解決の疑問だけに絞る（#136） */
+  const [unresolvedOnly, setUnresolvedOnly] = useState(false)
+
   function toggleType(type: LogType) {
     setTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
@@ -142,12 +145,14 @@ export default function SearchView() {
         query,
         types,
         markedLogIds: markedOnly ? markedLogIds : null,
+        unresolvedOnly,
       }),
-    [logs, query, types, markedOnly, markedLogIds],
+    [logs, query, types, markedOnly, markedLogIds, unresolvedOnly],
   )
 
   /** 何かで絞っているか。空の画面に出す文言を変えるために見る */
-  const filtering = query.trim() !== '' || types.length > 0 || markedOnly
+  const filtering =
+    query.trim() !== '' || types.length > 0 || markedOnly || unresolvedOnly
 
   /**
    * 見つからなかったときの文言。
@@ -159,6 +164,7 @@ export default function SearchView() {
     const keyword = query.trim()
     const scopes: string[] = []
     if (markedOnly) scopes.push('しおりを付けた記録')
+    if (unresolvedOnly) scopes.push('未解決の疑問')
     if (types.length > 0) {
       scopes.push(types.map((t) => LOG_TYPE_LABEL[t]).join('・'))
     }
@@ -169,7 +175,7 @@ export default function SearchView() {
 
     const scope = scopes.join(' と ')
     if (keyword === '') {
-      return markedOnly && types.length === 0
+      return markedOnly && types.length === 0 && !unresolvedOnly
         ? 'しおりを付けた記録はまだありません。記録の右上から付けられます。'
         : `${scope}の記録はまだありません。`
     }
@@ -207,6 +213,17 @@ export default function SearchView() {
           onClick={() => setMarkedOnly((on) => !on)}
         >
           <IconBookmark filled /> しおりだけ（{markedLogIds.size}）
+        </button>
+
+        <button
+          type="button"
+          className={
+            unresolvedOnly ? 'status-button selected' : 'status-button'
+          }
+          aria-pressed={unresolvedOnly}
+          onClick={() => setUnresolvedOnly((on) => !on)}
+        >
+          未解決の疑問
         </button>
 
         {FILTERABLE_TYPES.map((type) => (
