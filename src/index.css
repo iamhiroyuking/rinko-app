@@ -474,6 +474,23 @@ body {
 }
 
 /*
+  新着（#134）。開く理由になるものなので、他の札より強く出す。
+  ただし赤にはしない。輪講は義務であって通知で急かす場面ではないので、
+  「変わった」ことが分かれば足りる。
+*/
+.new-badge {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/*
   紹介ページ（#114）。ここだけ「読ませる」ページなので、
   他の画面より節の区切りをはっきりさせる。
 */

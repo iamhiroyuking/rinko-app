@@ -15,6 +15,7 @@ import {
 } from '../repository/books'
 import { signPaths } from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
+import { countNewLogs } from '../repository/activity'
 
 type LoadState =
   | { status: 'loading' }
@@ -65,7 +66,29 @@ export default function HomeView() {
     () => new Map(),
   )
 
+  /** 教材id → 前回見てから増えた記録の数（#134）。自分の書き込みは含まない */
+  const [newCounts, setNewCounts] = useState<Map<string, number>>(
+    () => new Map(),
+  )
+
   const userId = session?.user.id
+
+  // 新着は本棚とは別に取る。数が出なくても本棚は読めるので画面は止めない
+  useEffect(() => {
+    let cancelled = false
+
+    countNewLogs()
+      .then((counts) => {
+        if (!cancelled) setNewCounts(counts)
+      })
+      .catch(() => {
+        // 新着の数が出ないだけ。教材は開ける
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   useEffect(() => {
     let cancelled = false
@@ -231,6 +254,12 @@ export default function HomeView() {
                       {book.memberCount > 1 && (
                         <span className="book-shared">
                           <IconUsers /> {book.memberCount}人で共有
+                        </span>
+                      )}
+                      {/* 開く理由を作るのはここ。0のときは何も出さない */}
+                      {(newCounts.get(book.id) ?? 0) > 0 && (
+                        <span className="new-badge">
+                          新着 {newCounts.get(book.id)}件
                         </span>
                       )}
                     </Link>

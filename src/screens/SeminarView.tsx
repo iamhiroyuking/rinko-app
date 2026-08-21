@@ -13,6 +13,7 @@ import {
   type Unit,
 } from '../repository/units'
 import { errorMessage } from '../lib/errorMessage'
+import { countNewLogsByUnit, touchSeenAt } from '../repository/activity'
 import { formatUnitPageRange } from '../lib/pageRange'
 
 type LoadState =
@@ -54,6 +55,35 @@ export default function SeminarView() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  /** 回id → 前回見てから増えた記録の数（#134） */
+  const [newByUnit, setNewByUnit] = useState<Map<string, number>>(
+    () => new Map(),
+  )
+
+  /*
+    新着を数えてから「見た」ことにする。順番が逆だと、何が新しかったのかを
+    出せないまま印が消える。**この画面でだけ時刻を更新する**（概要を開いた
+    だけで消すと、記録を見ていないのに新着が黙って消える）。
+  */
+  useEffect(() => {
+    if (!bookId) return
+    let cancelled = false
+
+    countNewLogsByUnit(bookId)
+      .then((counts) => {
+        if (cancelled) return
+        setNewByUnit(counts)
+        return touchSeenAt(bookId)
+      })
+      .catch(() => {
+        // 印が出ないだけ。回の一覧は読める
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [bookId])
 
   useEffect(() => {
     if (!bookId) return
@@ -191,6 +221,12 @@ export default function SeminarView() {
                           {unit.startNote && <> ・ {unit.startNote}</>}
                         </span>
                       </span>
+                      {/* 前回見てから増えた分（#134）。0のときは出さない */}
+                      {(newByUnit.get(unit.id) ?? 0) > 0 && (
+                        <span className="new-badge">
+                          新着 {newByUnit.get(unit.id)}
+                        </span>
+                      )}
                       <span className={`pill status-${unit.status}`}>
                         {UNIT_STATUS_LABEL[unit.status]}
                       </span>
