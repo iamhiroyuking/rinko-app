@@ -1,0 +1,26 @@
+# XcodeGen 用の定義。Xcodeプロジェクト(.xcodeproj)は生成物なので、
+# 中身が読めないXML巨大ファイルをリポジトリに置かずに済む。
+#
+#   brew install xcodegen && xcodegen generate --spec ios/RinkoApp/project.yml
+name: RinkoApp
+options:
+  bundleIdPrefix: app.rinko
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  RinkoCore:
+    path: ../RinkoCore
+targets:
+  RinkoApp:
+    type: application
+    platform: iOS
+    sources: [RinkoApp]
+    dependencies:
+      - package: RinkoCore
+    info:
+      path: RinkoApp/Info.plist
+      properties:
+        CFBundleDisplayName: 輪講
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait

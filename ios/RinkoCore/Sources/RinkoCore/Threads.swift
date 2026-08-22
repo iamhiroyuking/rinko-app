@@ -81,7 +81,7 @@ public enum Threads {
 /// 回の進み具合。`src/repository/units.ts` から移した。
 public enum Progress {
 
-  public static func count(_ units: [Unit]) -> UnitProgress {
+  public static func count(_ units: [StudyUnit]) -> UnitProgress {
     let total = units.count
     let done = units.filter { $0.status == .done }.count
     // TypeScript版の Math.round に合わせる。四捨五入
@@ -93,7 +93,7 @@ public enum Progress {
   ///
   /// 日付ではなく並び順で決めている。日付が入っていない回や、予定より
   /// 遅れている回でも同じように扱えるため。
-  public static func findNext(_ units: [Unit]) -> Unit? {
+  public static func findNext(_ units: [StudyUnit]) -> StudyUnit? {
     units.first { $0.status != .done }
   }
 }
