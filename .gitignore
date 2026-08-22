@@ -14,3 +14,8 @@ dist/
 
 # Swift Package Manager のビルド成果物
 ios/**/.build/
+
+# Xcodeプロジェクトは project.yml から生成する（xcodegen generate）。
+# 巨大なXMLで差分が読めず、競合も解けないためリポジトリには入れない
+ios/RinkoApp/*.xcodeproj/
+ios/RinkoApp/RinkoApp/Info.plist
