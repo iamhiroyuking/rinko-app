@@ -18,10 +18,10 @@ import Foundation
  ■ 「集合知」への置き直しで変わるところ
 
  データの形は変えない（docs/concept.md）。ここで変わるのは**言葉**だけ。
- 型の名前は英語のまま（`Book` / `Unit` / `Log`）にしてあり、
+ 型の名前は英語のまま（`Book` / `StudyUnit` / `Log`）にしてあり、
  画面に出す日本語だけを差し替えれば済むようにしている。
 
- 輪講に固有なのは `Unit.presenterId` と `Unit.scheduledDate` の2つで、
+ 輪講に固有なのは `StudyUnit.presenterId` と `StudyUnit.scheduledDate` の2つで、
  どちらも省略できる。ひとりの読書記録では使わない。
  */
 
@@ -116,8 +116,8 @@ public struct TrashedBook: Sendable, Identifiable {
 // MARK: - 回
 
 public protocol UnitRepository: Sendable {
-  func list(bookId: String) async throws -> [Unit]
-  func get(id: String) async throws -> Unit?
+  func list(bookId: String) async throws -> [StudyUnit]
+  func get(id: String) async throws -> StudyUnit?
   func create(_ input: NewUnit) async throws -> String
   func update(id: String, _ input: NewUnit) async throws
   func updatePages(id: String, from: Int?, to: Int?, startNote: String?) async throws

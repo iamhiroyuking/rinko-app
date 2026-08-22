@@ -114,8 +114,8 @@ struct SortByPageTests {
 @Suite
 struct ProgressTests {
 
-  private func unit(_ order: Int, _ status: UnitStatus) -> Unit {
-    Unit(id: "u\(order)", order: order, status: status)
+  private func unit(_ order: Int, _ status: UnitStatus) -> StudyUnit {
+    StudyUnit(id: "u\(order)", order: order, status: status)
   }
 
   @Test

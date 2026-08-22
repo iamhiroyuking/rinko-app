@@ -96,7 +96,7 @@ public enum UnitStatus: String, Sendable, CaseIterable {
   }
 }
 
-public struct Unit: Sendable, Identifiable, Equatable {
+public struct StudyUnit: Sendable, Identifiable, Equatable {
   public let id: String
   public let order: Int
   public let title: String
