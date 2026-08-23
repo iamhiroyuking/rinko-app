@@ -19,3 +19,7 @@ ios/**/.build/
 # 巨大なXMLで差分が読めず、競合も解けないためリポジトリには入れない
 ios/RinkoApp/*.xcodeproj/
 ios/RinkoApp/RinkoApp/Info.plist
+
+# Supabaseの接続先と鍵。anon key は公開されても問題ない値だが、
+# リポジトリが public なので値そのものは置かない（Secrets.xcconfig.example を参照）
+ios/Secrets.xcconfig

@@ -98,7 +98,22 @@ public enum PreviewData {
   public static let newCounts: [String: Int] = ["book-linear": 3]
 }
 
-/// 偽の実装。ネットワークを使わずに画面を動かす
+/// 偽の実装。ネットワークを使わずに画面を動かす。
+///
+/// **常にログイン済みとして振る舞う。** プレビューでログイン画面を
+/// 出したいわけではないので、関門は素通りさせる。
+public struct FakeAuthRepository: AuthRepository {
+  public init() {}
+
+  public func signUp(email: String, password: String, displayName: String) async throws {}
+  public func signIn(email: String, password: String) async throws {}
+  public func signOut() async throws {}
+  public func currentUserId() async throws -> String? { PreviewData.me }
+  public func sendPasswordReset(email: String) async throws {}
+  public func updatePassword(_ newPassword: String) async throws {}
+  public func deleteMyAccount() async throws {}
+}
+
 public struct FakeBookRepository: BookRepository {
   public init() {}
 

@@ -13,8 +13,9 @@ import SwiftUI
  */
 
 struct ShelfScreen: View {
-  let books: any BookRepository
-  let activity: any ActivityRepository
+  let repositories: AppRepositories
+  /// ログイン中の利用者。担当が自分かどうかの判定に使う
+  let userId: String
 
   @State private var shelf: [ShelfBook] = []
   @State private var upcoming: [UpcomingUnit] = []
@@ -28,11 +29,7 @@ struct ShelfScreen: View {
         Section("次にやること") {
           ForEach(upcoming) { item in
             NavigationLink {
-              UnitScreen(
-                unitId: item.unitId,
-                logs: FakeLogRepository(),
-                units: FakeUnitRepository(),
-                members: FakeMemberRepository())
+              UnitScreen(unitId: item.unitId, repositories: repositories)
             } label: {
               UpcomingRow(item: item)
             }
@@ -44,10 +41,8 @@ struct ShelfScreen: View {
         ForEach(shelf) { book in
           NavigationLink {
             UnitListScreen(
-              bookId: book.id,
-              bookTitle: book.title,
-              units: FakeUnitRepository(),
-              members: FakeMemberRepository())
+              bookId: book.id, bookTitle: book.title,
+              repositories: repositories)
           } label: {
             ShelfRow(book: book, newCount: newCounts[book.id] ?? 0)
           }
@@ -55,6 +50,7 @@ struct ShelfScreen: View {
       }
     }
     .navigationTitle("本棚")
+    .refreshable { await load() }
     .task { await load() }
     .alert("読み込めませんでした", isPresented: .constant(errorMessage != nil)) {
       Button("閉じる") { errorMessage = nil }
@@ -65,9 +61,9 @@ struct ShelfScreen: View {
 
   private func load() async {
     do {
-      shelf = try await books.listShelf(status: .reading)
-      upcoming = try await activity.listUpcoming()
-      newCounts = try await activity.countNewLogs()
+      shelf = try await repositories.books.listShelf(status: .reading)
+      upcoming = try await repositories.activity.listUpcoming()
+      newCounts = try await repositories.activity.countNewLogs()
     } catch {
       errorMessage = (error as? RinkoError)?.message ?? error.localizedDescription
     }
@@ -148,6 +144,6 @@ private struct ShelfRow: View {
 
 #Preview {
   NavigationStack {
-    ShelfScreen(books: FakeBookRepository(), activity: FakeActivityRepository())
+    ShelfScreen(repositories: .preview, userId: PreviewData.me)
   }
 }
