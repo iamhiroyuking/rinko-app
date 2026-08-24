@@ -77,6 +77,17 @@ public struct ShelfBook: Sendable, Identifiable {
   public let shelfStatus: ShelfStatus
   /// 自分を含む参加者の数。2人以上なら共有されている
   public let memberCount: Int
+
+  public init(
+    id: String, title: String, coverStoragePath: String?,
+    shelfStatus: ShelfStatus, memberCount: Int
+  ) {
+    self.id = id
+    self.title = title
+    self.coverStoragePath = coverStoragePath
+    self.shelfStatus = shelfStatus
+    self.memberCount = memberCount
+  }
 }
 
 public protocol BookRepository: Sendable {
@@ -105,12 +116,29 @@ public struct Book: Sendable, Identifiable {
   public let goal: String?
   public let coverStoragePath: String?
   public let createdBy: String
+
+  public init(
+    id: String, title: String, goal: String?,
+    coverStoragePath: String?, createdBy: String
+  ) {
+    self.id = id
+    self.title = title
+    self.goal = goal
+    self.coverStoragePath = coverStoragePath
+    self.createdBy = createdBy
+  }
 }
 
 public struct TrashedBook: Sendable, Identifiable {
   public let id: String
   public let title: String
   public let deletedAt: String
+
+  public init(id: String, title: String, deletedAt: String) {
+    self.id = id
+    self.title = title
+    self.deletedAt = deletedAt
+  }
 }
 
 // MARK: - 回
@@ -142,6 +170,21 @@ public struct NewUnit: Sendable {
   public let pageFrom: Int?
   public let pageTo: Int?
   public let startNote: String?
+
+  public init(
+    bookId: String, title: String, objective: String? = nil,
+    presenterId: String? = nil, scheduledDate: String? = nil,
+    pageFrom: Int? = nil, pageTo: Int? = nil, startNote: String? = nil
+  ) {
+    self.bookId = bookId
+    self.title = title
+    self.objective = objective
+    self.presenterId = presenterId
+    self.scheduledDate = scheduledDate
+    self.pageFrom = pageFrom
+    self.pageTo = pageTo
+    self.startNote = startNote
+  }
 }
 
 public struct TrashedUnit: Sendable, Identifiable {
@@ -151,6 +194,18 @@ public struct TrashedUnit: Sendable, Identifiable {
   public let order: Int
   public let title: String
   public let deletedAt: String
+
+  public init(
+    id: String, bookId: String, bookTitle: String,
+    order: Int, title: String, deletedAt: String
+  ) {
+    self.id = id
+    self.bookId = bookId
+    self.bookTitle = bookTitle
+    self.order = order
+    self.title = title
+    self.deletedAt = deletedAt
+  }
 }
 
 // MARK: - 記録
@@ -181,6 +236,21 @@ public struct NewLog: Sendable {
   public let tagNames: [String]
   /// 返信のときだけ入る
   public let parentLogId: String?
+
+  public init(
+    unitId: String, type: LogType = .none, title: String? = nil,
+    body: String, pageStart: Int? = nil, pageEnd: Int? = nil,
+    tagNames: [String] = [], parentLogId: String? = nil
+  ) {
+    self.unitId = unitId
+    self.type = type
+    self.title = title
+    self.body = body
+    self.pageStart = pageStart
+    self.pageEnd = pageEnd
+    self.tagNames = tagNames
+    self.parentLogId = parentLogId
+  }
 }
 
 // MARK: - 探す
@@ -205,6 +275,26 @@ public struct SearchableLog: Sendable, Identifiable {
   public let tagNames: [String]
   public let createdAt: String
   public let attachmentCount: Int
+
+  public init(
+    id: String, unitId: String, unitOrder: Int, unitTitle: String,
+    authorId: String, title: String?, body: String, type: LogType,
+    resolvedAt: String?, tagNames: [String], createdAt: String,
+    attachmentCount: Int
+  ) {
+    self.id = id
+    self.unitId = unitId
+    self.unitOrder = unitOrder
+    self.unitTitle = unitTitle
+    self.authorId = authorId
+    self.title = title
+    self.body = body
+    self.type = type
+    self.resolvedAt = resolvedAt
+    self.tagNames = tagNames
+    self.createdAt = createdAt
+    self.attachmentCount = attachmentCount
+  }
 }
 
 // MARK: - 共有
@@ -235,6 +325,12 @@ public struct BookMember: Sendable, Identifiable {
   public let id: String
   public let displayName: String
   public let role: InviteRole
+
+  public init(id: String, displayName: String, role: InviteRole) {
+    self.id = id
+    self.displayName = displayName
+    self.role = role
+  }
 }
 
 public protocol MemberRepository: Sendable {
@@ -273,6 +369,12 @@ public struct ImagePayload: Sendable {
   public let data: Data
   public let fileName: String
   public let mimeType: String
+
+  public init(data: Data, fileName: String, mimeType: String) {
+    self.data = data
+    self.fileName = fileName
+    self.mimeType = mimeType
+  }
 }
 
 // MARK: - 動き
@@ -288,6 +390,21 @@ public struct UpcomingUnit: Sendable, Identifiable {
   public let presenterName: String?
   /// 自分が担当か。準備が要る側なので目立たせる
   public let isMine: Bool
+
+  public init(
+    bookId: String, bookTitle: String, unitId: String, order: Int,
+    title: String, scheduledDate: String?, presenterName: String?,
+    isMine: Bool
+  ) {
+    self.bookId = bookId
+    self.bookTitle = bookTitle
+    self.unitId = unitId
+    self.order = order
+    self.title = title
+    self.scheduledDate = scheduledDate
+    self.presenterName = presenterName
+    self.isMine = isMine
+  }
 }
 
 public protocol ActivityRepository: Sendable {

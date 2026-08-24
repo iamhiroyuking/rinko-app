@@ -5,8 +5,7 @@ import SwiftUI
 struct UnitListScreen: View {
   let bookId: String
   let bookTitle: String
-  let units: any UnitRepository
-  let members: any MemberRepository
+  let repositories: AppRepositories
 
   @State private var list: [StudyUnit] = []
   @State private var memberList: [BookMember] = []
@@ -33,9 +32,7 @@ struct UnitListScreen: View {
       Section {
         ForEach(list) { unit in
           NavigationLink {
-            UnitScreen(
-              unitId: unit.id, logs: FakeLogRepository(),
-              units: units, members: members)
+            UnitScreen(unitId: unit.id, repositories: repositories)
           } label: {
             UnitRow(unit: unit, presenterName: name(of: unit.presenterId))
           }
@@ -45,8 +42,8 @@ struct UnitListScreen: View {
     .navigationTitle(bookTitle)
     .navigationBarTitleDisplayMode(.inline)
     .task {
-      list = (try? await units.list(bookId: bookId)) ?? []
-      memberList = (try? await members.list(bookId: bookId)) ?? []
+      list = (try? await repositories.units.list(bookId: bookId)) ?? []
+      memberList = (try? await repositories.members.list(bookId: bookId)) ?? []
     }
   }
 
@@ -113,6 +110,6 @@ struct StatusPill: View {
   NavigationStack {
     UnitListScreen(
       bookId: "book-prml", bookTitle: "パターン認識と機械学習",
-      units: FakeUnitRepository(), members: FakeMemberRepository())
+      repositories: .preview)
   }
 }

@@ -11,9 +11,7 @@ import SwiftUI
 
 struct UnitScreen: View {
   let unitId: String
-  let logs: any LogRepository
-  let units: any UnitRepository
-  let members: any MemberRepository
+  let repositories: AppRepositories
 
   @State private var unit: StudyUnit?
   @State private var threads: [LogThread] = []
@@ -70,9 +68,9 @@ struct UnitScreen: View {
     .navigationTitle(unit.map { "第\($0.order)回　\($0.title)" } ?? "記録")
     .navigationBarTitleDisplayMode(.inline)
     .task {
-      unit = try? await units.get(id: unitId)
-      memberList = (try? await members.list(bookId: "")) ?? []
-      let all = (try? await logs.list(unitId: unitId)) ?? []
+      unit = try? await repositories.units.get(id: unitId)
+      memberList = (try? await repositories.members.list(bookId: "")) ?? []
+      let all = (try? await repositories.logs.list(unitId: unitId)) ?? []
       threads = Threads.build(all)
     }
   }
@@ -150,7 +148,6 @@ private struct LogCard: View {
 #Preview {
   NavigationStack {
     UnitScreen(
-      unitId: "unit-2", logs: FakeLogRepository(),
-      units: FakeUnitRepository(), members: FakeMemberRepository())
+      unitId: "unit-2", repositories: .preview)
   }
 }
