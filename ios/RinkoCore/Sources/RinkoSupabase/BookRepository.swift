@@ -81,17 +81,58 @@ public struct SupabaseBookRepository: BookRepository {
     }
   }
 
+  /// その教材に対する「自分の」参加情報。
+  ///
+  /// **`user_id` で絞るのを忘れないこと。** 参加者名を表示するために
+  /// 「同じ教材の参加者全員」を読める設定にしてあるので、絞らないと
+  /// 共有相手の行まで返ってきて、他人のステータスを自分のものとして
+  /// 表示してしまう（`listShelf` と同じ落とし穴）。
+  public func getMyShelfEntry(id: String) async throws -> MyShelfEntry? {
+    let userId = try await connection.requireUserId()
+
+    do {
+      let rows: [ShelfEntryRow] = try await connection.client
+        .from("memberships")
+        .select("shelf_status, joined_at")
+        .eq("book_id", value: id)
+        .eq("user_id", value: userId)
+        .is("deleted_at", value: nil)
+        .limit(1)
+        .execute()
+        .value
+
+      guard let row = rows.first else { return nil }
+      return MyShelfEntry(
+        shelfStatus: ShelfStatus(rawValue: row.shelfStatus) ?? .reading,
+        joinedAt: row.joinedAt
+      )
+    } catch {
+      throw translate(error)
+    }
+  }
+
+  private struct ShelfEntryRow: Decodable, Sendable {
+    let shelfStatus: String
+    let joinedAt: String
+    enum CodingKeys: String, CodingKey {
+      case shelfStatus = "shelf_status"
+      case joinedAt = "joined_at"
+    }
+  }
+
   /// 教材そのもの。参加していなければ nil が返る（行レベルセキュリティ）
   public func get(id: String) async throws -> Book? {
     do {
-      let row: BookRow? = try await connection.client
+      // PostgRESTは常に配列で返す。`.single()`はゼロ件のとき410で落ちるので
+      // 使わず、配列のまま受けて先頭を取る（他の `get` と同じ形）
+      let rows: [BookRow] = try await connection.client
         .from("books")
         .select("id, title, goal, cover_image_url, cover_storage_path, created_by")
         .eq("id", value: id)
         .execute()
         .value
 
-      guard let row else { return nil }
+      guard let row = rows.first else { return nil }
       return Book(
         id: row.id,
         title: row.title,

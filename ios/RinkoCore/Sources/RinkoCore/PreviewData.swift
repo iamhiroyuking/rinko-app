@@ -123,6 +123,10 @@ public struct FakeBookRepository: BookRepository {
   public func countShelf(status: ShelfStatus) async throws -> Int {
     try await listShelf(status: status).count
   }
+  public func getMyShelfEntry(id: String) async throws -> MyShelfEntry? {
+    guard let book = PreviewData.books.first(where: { $0.id == id }) else { return nil }
+    return MyShelfEntry(shelfStatus: book.shelfStatus, joinedAt: "2026-08-01T00:00:00Z")
+  }
   public func get(id: String) async throws -> Book? {
     guard let shelf = PreviewData.books.first(where: { $0.id == id }) else { return nil }
     return Book(
@@ -188,4 +192,43 @@ public struct FakeActivityRepository: ActivityRepository {
   public func listUpcoming() async throws -> [UpcomingUnit] {
     Upcoming.sort(PreviewData.upcoming)
   }
+}
+
+public struct FakeSearchRepository: SearchRepository {
+  public init() {}
+  public func listSearchable(bookId: String) async throws -> [SearchableLog] {
+    PreviewData.logs.map { log in
+      SearchableLog(
+        id: log.id, unitId: "unit-1", unitOrder: 1, unitTitle: "序章と確率の復習",
+        authorId: log.authorId, title: log.title, body: log.body, type: log.type,
+        resolvedAt: log.resolvedAt, tagNames: log.tagNames, createdAt: log.createdAt,
+        attachmentCount: 0)
+    }
+  }
+}
+
+public struct FakeInviteRepository: InviteRepository {
+  public init() {}
+  public func token(bookId: String, role: InviteRole) async throws -> String? { "preview-token" }
+  public func issue(bookId: String, role: InviteRole) async throws -> String { "preview-token" }
+  public func revoke(bookId: String, role: InviteRole) async throws {}
+  public func join(token: String) async throws -> String { "book-prml" }
+}
+
+public struct FakeMarkRepository: MarkRepository {
+  public init() {}
+  public func listMine(logIds: [String]) async throws -> Set<String> { [] }
+  public func listMineInBook(bookId: String) async throws -> Set<String> { [] }
+  public func add(logId: String) async throws {}
+  public func remove(logId: String) async throws {}
+}
+
+public struct FakeAttachmentRepository: AttachmentRepository {
+  public init() {}
+  public func uploadLogImages(bookId: String, logId: String, images: [ImagePayload]) async throws {}
+  public func uploadBookCover(bookId: String, image: ImagePayload) async throws -> String { "preview/cover.jpg" }
+  public func signedURLs(paths: [String]) async throws -> [String: URL] { [:] }
+  public func removeLogImages(logId: String) async throws {}
+  public func removeUnitImages(unitId: String) async throws {}
+  public func removeBookImages(bookId: String) async throws {}
 }

@@ -18,6 +18,9 @@ public struct SupabaseRepositories: Sendable {
   public let attachments: SupabaseAttachmentRepository
   public let activity: SupabaseActivityRepository
   public let members: SupabaseMemberRepository
+  public let search: SupabaseSearchRepository
+  public let invites: SupabaseInviteRepository
+  public let marks: SupabaseMarkRepository
 
   public init(config: SupabaseConfig) {
     let connection = Connection(config: config)
@@ -28,6 +31,9 @@ public struct SupabaseRepositories: Sendable {
     self.attachments = SupabaseAttachmentRepository(connection: connection)
     self.activity = SupabaseActivityRepository(connection: connection)
     self.members = SupabaseMemberRepository(connection: connection)
+    self.search = SupabaseSearchRepository(connection: connection)
+    self.invites = SupabaseInviteRepository(connection: connection)
+    self.marks = SupabaseMarkRepository(connection: connection)
   }
 
   /// `Info.plist` から鍵を読んで組み立てる。起動時に一度だけ呼ぶ

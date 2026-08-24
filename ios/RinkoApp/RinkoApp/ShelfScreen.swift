@@ -4,8 +4,9 @@ import SwiftUI
 /*
  本棚。Web版の `HomeView` に当たる。
 
- 並びは向こうと同じで「次にやること → 本棚」。**本棚の上に足すのであって
- 置き換えない**という判断もそのまま引き継いでいる。
+ 並びは向こうと同じで「次にやること → 本棚」。表示するのは
+ `shelf_status = reading` の教材が主役で、学習予定・学習済みは
+ フィルタの切り替えで見る。
 
  SwiftUIではWeb版のCSSグリッドではなく `List` を使っている。
  iOSでは引いて更新する・横に払って消すといった動きが標準で付いてくるので、
@@ -14,22 +15,23 @@ import SwiftUI
 
 struct ShelfScreen: View {
   let repositories: AppRepositories
-  /// ログイン中の利用者。担当が自分かどうかの判定に使う
   let userId: String
 
   @State private var shelf: [ShelfBook] = []
   @State private var upcoming: [UpcomingUnit] = []
   @State private var newCounts: [String: Int] = [:]
+  @State private var status: ShelfStatus = .reading
   @State private var errorMessage: String?
+  @State private var showingAddBook = false
 
   var body: some View {
     List {
       // 予定が無いときは節ごと出さない。空の枠が毎回目に入るのを避ける
-      if !upcoming.isEmpty {
+      if status == .reading, !upcoming.isEmpty {
         Section("次にやること") {
           ForEach(upcoming) { item in
             NavigationLink {
-              UnitScreen(unitId: item.unitId, repositories: repositories)
+              BookSummaryScreen(bookId: item.bookId, repositories: repositories)
             } label: {
               UpcomingRow(item: item)
             }
@@ -37,12 +39,22 @@ struct ShelfScreen: View {
         }
       }
 
-      Section("学習中の教材") {
+      Section {
+        Picker("表示", selection: $status) {
+          ForEach(ShelfStatus.allCases, id: \.self) { Text($0.label).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
+      }
+
+      Section {
+        if shelf.isEmpty {
+          Text("まだありません").foregroundStyle(.secondary)
+        }
         ForEach(shelf) { book in
           NavigationLink {
-            UnitListScreen(
-              bookId: book.id, bookTitle: book.title,
-              repositories: repositories)
+            BookSummaryScreen(bookId: book.id, repositories: repositories)
           } label: {
             ShelfRow(book: book, newCount: newCounts[book.id] ?? 0)
           }
@@ -50,8 +62,26 @@ struct ShelfScreen: View {
       }
     }
     .navigationTitle("本棚")
+    .toolbar {
+      ToolbarItem(placement: .primaryAction) {
+        Button { showingAddBook = true } label: { Image(systemName: "plus") }
+      }
+      ToolbarItem(placement: .secondaryAction) {
+        NavigationLink {
+          TrashScreen(repositories: repositories)
+        } label: {
+          Label("ゴミ箱", systemImage: "trash")
+        }
+      }
+    }
     .refreshable { await load() }
     .task { await load() }
+    .onChange(of: status) { _, _ in Task { await load() } }
+    .sheet(isPresented: $showingAddBook) {
+      AddBookScreen(repositories: repositories) { _ in
+        Task { await load() }
+      }
+    }
     .alert("読み込めませんでした", isPresented: .constant(errorMessage != nil)) {
       Button("閉じる") { errorMessage = nil }
     } message: {
@@ -61,9 +91,11 @@ struct ShelfScreen: View {
 
   private func load() async {
     do {
-      shelf = try await repositories.books.listShelf(status: .reading)
-      upcoming = try await repositories.activity.listUpcoming()
-      newCounts = try await repositories.activity.countNewLogs()
+      shelf = try await repositories.books.listShelf(status: status)
+      if status == .reading {
+        upcoming = try await repositories.activity.listUpcoming()
+        newCounts = try await repositories.activity.countNewLogs()
+      }
     } catch {
       errorMessage = (error as? RinkoError)?.message ?? error.localizedDescription
     }

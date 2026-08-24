@@ -97,6 +97,8 @@ public protocol BookRepository: Sendable {
   func listShelf(status: ShelfStatus) async throws -> [ShelfBook]
   func countShelf(status: ShelfStatus) async throws -> Int
   func get(id: String) async throws -> Book?
+  /// その教材に対する「自分の」参加情報。共有相手のものは含めない
+  func getMyShelfEntry(id: String) async throws -> MyShelfEntry?
   func create(title: String, goal: String?) async throws -> String
   func update(id: String, title: String, goal: String?) async throws
   func updateShelfStatus(id: String, status: ShelfStatus) async throws
@@ -108,6 +110,18 @@ public protocol BookRepository: Sendable {
   /// 参加者が全員消したときに、配下ごと消える
   func permanentlyDelete(id: String) async throws
   func listTrashed() async throws -> [TrashedBook]
+}
+
+/// その教材に対する「自分の」参加情報
+public struct MyShelfEntry: Sendable {
+  public let shelfStatus: ShelfStatus
+  /// この教材に参加した日時。学習開始日として表示する
+  public let joinedAt: String
+
+  public init(shelfStatus: ShelfStatus, joinedAt: String) {
+    self.shelfStatus = shelfStatus
+    self.joinedAt = joinedAt
+  }
 }
 
 public struct Book: Sendable, Identifiable {

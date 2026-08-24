@@ -8,7 +8,7 @@ import SwiftUI
  **画面はプロトコルだけを見る。** 中身がSupabaseなのか偽の実装なのかを
  知らずに済むので、プレビューでは偽の方を差し替えるだけでよい。
 
- 個別に4つ渡していたのを1つにまとめた。画面が増えるたびに引数が
+ 個別に渡していたのを1つにまとめた。画面が増えるたびに引数が
  増えていくのを避けるため。
  */
 struct AppRepositories {
@@ -18,6 +18,10 @@ struct AppRepositories {
   let logs: any LogRepository
   let members: any MemberRepository
   let activity: any ActivityRepository
+  let search: any SearchRepository
+  let invites: any InviteRepository
+  let marks: any MarkRepository
+  let attachments: any AttachmentRepository
 
   /// Supabaseに繋いだ本物
   static func live(_ supabase: SupabaseRepositories) -> AppRepositories {
@@ -27,7 +31,11 @@ struct AppRepositories {
       units: supabase.units,
       logs: supabase.logs,
       members: supabase.members,
-      activity: supabase.activity
+      activity: supabase.activity,
+      search: supabase.search,
+      invites: supabase.invites,
+      marks: supabase.marks,
+      attachments: supabase.attachments
     )
   }
 
@@ -38,6 +46,10 @@ struct AppRepositories {
     units: FakeUnitRepository(),
     logs: FakeLogRepository(),
     members: FakeMemberRepository(),
-    activity: FakeActivityRepository()
+    activity: FakeActivityRepository(),
+    search: FakeSearchRepository(),
+    invites: FakeInviteRepository(),
+    marks: FakeMarkRepository(),
+    attachments: FakeAttachmentRepository()
   )
 }
