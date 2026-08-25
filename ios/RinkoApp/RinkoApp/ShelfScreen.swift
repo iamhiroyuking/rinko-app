@@ -24,6 +24,7 @@ struct ShelfScreen: View {
   @State private var status: ShelfStatus = .reading
   @State private var errorMessage: String?
   @State private var showingAddBook = false
+  @State private var hasLoaded = false
 
   var body: some View {
     List {
@@ -50,7 +51,13 @@ struct ShelfScreen: View {
       }
 
       Section {
-        if shelf.isEmpty {
+        if !hasLoaded {
+          HStack {
+            Spacer()
+            ProgressView()
+            Spacer()
+          }
+        } else if shelf.isEmpty {
           Text("まだありません").foregroundStyle(.secondary)
         }
         ForEach(shelf) { book in
@@ -66,6 +73,7 @@ struct ShelfScreen: View {
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
         Button { showingAddBook = true } label: { Image(systemName: "plus") }
+          .accessibilityLabel("教材を増やす")
       }
       ToolbarItem(placement: .secondaryAction) {
         NavigationLink {
@@ -93,6 +101,7 @@ struct ShelfScreen: View {
   private func load() async {
     do {
       shelf = try await repositories.books.listShelf(status: status)
+      hasLoaded = true
       if status == .reading {
         upcoming = try await repositories.activity.listUpcoming()
         newCounts = try await repositories.activity.countNewLogs()

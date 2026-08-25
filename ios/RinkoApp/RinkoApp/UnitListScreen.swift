@@ -12,6 +12,7 @@ struct UnitListScreen: View {
   @State private var myUserId: String?
   @State private var showingCreate = false
   @State private var errorMessage: String?
+  @State private var hasLoaded = false
 
   private var progress: UnitProgress { Progress.count(list) }
 
@@ -33,6 +34,9 @@ struct UnitListScreen: View {
       }
 
       Section {
+        if hasLoaded, list.isEmpty {
+          Text("まだ回がありません").foregroundStyle(.secondary)
+        }
         ForEach(list) { unit in
           NavigationLink {
             UnitScreen(bookId: bookId, unitId: unit.id, repositories: repositories)
@@ -70,6 +74,7 @@ struct UnitListScreen: View {
         } label: {
           Image(systemName: "magnifyingglass")
         }
+        .accessibilityLabel("検索")
       }
     }
     .refreshable { await load() }
@@ -96,6 +101,7 @@ struct UnitListScreen: View {
     do {
       list = try await repositories.units.list(bookId: bookId)
       memberList = try await repositories.members.list(bookId: bookId)
+      hasLoaded = true
     } catch {
       errorMessage = (error as? RinkoError)?.message ?? error.localizedDescription
     }

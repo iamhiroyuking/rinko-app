@@ -46,7 +46,7 @@ struct AddBookScreen: View {
     NavigationStack {
       Form {
         Section {
-          Picker("", selection: $mode) {
+          Picker("教材の追加方法", selection: $mode) {
             ForEach(Mode.allCases, id: \.self) { Text($0.label).tag($0) }
           }
           .pickerStyle(.segmented)

@@ -43,7 +43,7 @@ struct LoginScreen: View {
     NavigationStack {
       Form {
         Section {
-          Picker("", selection: $mode) {
+          Picker("ログインかアカウント作成か", selection: $mode) {
             Text("ログイン").tag(Mode.signIn)
             Text("アカウントを作る").tag(Mode.signUp)
           }
