@@ -28,6 +28,7 @@ struct BookSummaryScreen: View {
   @State private var showingEdit = false
   @State private var showingDeleteConfirm = false
   @State private var goToSeminar = false
+  @State private var coverURL: URL?
 
   private var progress: UnitProgress { Progress.count(units) }
   private var nextUnit: StudyUnit? { Progress.findNext(units) }
@@ -36,6 +37,19 @@ struct BookSummaryScreen: View {
     List {
       if let book {
         Section {
+          if let coverURL {
+            HStack {
+              Spacer()
+              AsyncImage(url: coverURL) { image in
+                image.resizable().scaledToFit()
+              } placeholder: {
+                Color.clear
+              }
+              .frame(height: 140)
+              .clipShape(RoundedRectangle(cornerRadius: 8))
+              Spacer()
+            }
+          }
           Text(book.title).font(.title3.weight(.bold))
           if let goal = book.goal, !goal.isEmpty {
             Text(goal).font(.callout).foregroundStyle(.secondary)
@@ -168,6 +182,12 @@ struct BookSummaryScreen: View {
       editorToken = try await editorTask
       viewerToken = try await viewerTask
       shelfEntry = try await shelfTask
+
+      if let path = book?.coverStoragePath {
+        coverURL = try await repositories.attachments.signedURLs(paths: [path])[path]
+      } else {
+        coverURL = nil
+      }
     } catch {
       errorMessage = (error as? RinkoError)?.message ?? error.localizedDescription
     }
