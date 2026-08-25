@@ -40,3 +40,7 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # 招待リンクの参加とパスワード再設定に使う。
+        # `rinko://join/<token>` と `rinko://reset-password` を受ける
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: [rinko]

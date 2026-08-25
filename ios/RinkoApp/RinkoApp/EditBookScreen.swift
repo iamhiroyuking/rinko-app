@@ -1,7 +1,8 @@
 import RinkoCore
 import SwiftUI
+import UIKit
 
-/// 教材名と目標の編集。BookSummaryScreen から開く
+/// 教材名・目標・表紙の編集。BookSummaryScreen から開く
 struct EditBookScreen: View {
   let book: Book
   let repositories: AppRepositories
@@ -10,6 +11,8 @@ struct EditBookScreen: View {
   @Environment(\.dismiss) private var dismiss
   @State private var title: String
   @State private var goal: String
+  @State private var coverPayload: ImagePayload?
+  @State private var coverPreview: UIImage?
   @State private var working = false
   @State private var errorMessage: String?
 
@@ -28,6 +31,14 @@ struct EditBookScreen: View {
   var body: some View {
     NavigationStack {
       Form {
+        Section {
+          HStack {
+            Spacer()
+            CoverPicker(payload: $coverPayload, previewImage: $coverPreview)
+            Spacer()
+          }
+        }
+
         Section("書名") {
           TextField("書名", text: $title)
         }
@@ -54,7 +65,16 @@ struct EditBookScreen: View {
           }
         }
       }
+      .task { await loadCurrentCover() }
     }
+  }
+
+  /// いまの表紙をプレビューに出す。選び直さなければそのまま
+  private func loadCurrentCover() async {
+    guard let path = book.coverStoragePath else { return }
+    guard let url = try? await repositories.attachments.signedURLs(paths: [path])[path] else { return }
+    guard let (data, _) = try? await URLSession.shared.data(from: url) else { return }
+    coverPreview = UIImage(data: data)
   }
 
   private func submit() async {
@@ -68,6 +88,14 @@ struct EditBookScreen: View {
         title: title.trimmingCharacters(in: .whitespacesAndNewlines),
         goal: goal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : goal
       )
+
+      // 選び直したときだけ差し替える。古い画像は消さない
+      // （記録の添付と違って表紙は1枚だけなので、実害は小さい）
+      if let coverPayload {
+        let path = try await repositories.attachments.uploadBookCover(bookId: book.id, image: coverPayload)
+        try await repositories.books.setCoverPath(id: book.id, path: path)
+      }
+
       onSaved()
       dismiss()
     } catch {

@@ -1,13 +1,16 @@
 import RinkoCore
+import UIKit
 import SwiftUI
 
 /*
  教材を増やす。Web版の `AddBookView` に当たる。
 
- 2つのモードを持つ。**新規作成**（書名と目標を入力）と、
+ 2つのモードを持つ。**新規作成**（書名・目標・表紙を入力）と、
  **招待リンクで参加**（受け取ったリンクを貼る）。
 
- 表紙画像のアップロードはまだ移していない（画像ピッカーと縮小処理が要る）。
+ 表紙は**教材を作ってから**アップロードする。置き場所（パス）が
+ `<book_id>/cover/…` で、作る前はidが無く場所が決まらないため
+ （記録の画像と同じ理由）。
  */
 
 struct AddBookScreen: View {
@@ -26,6 +29,8 @@ struct AddBookScreen: View {
   @State private var title = ""
   @State private var goal = ""
   @State private var inviteInput = ""
+  @State private var coverPayload: ImagePayload?
+  @State private var coverPreview: UIImage?
   @State private var working = false
   @State private var errorMessage: String?
 
@@ -51,6 +56,14 @@ struct AddBookScreen: View {
         }
 
         if mode == .create {
+          Section {
+            HStack {
+              Spacer()
+              CoverPicker(payload: $coverPayload, previewImage: $coverPreview)
+              Spacer()
+            }
+          }
+
           Section("書名") {
             TextField("書名", text: $title)
           }
@@ -116,6 +129,10 @@ struct AddBookScreen: View {
           title: title.trimmingCharacters(in: .whitespacesAndNewlines),
           goal: goal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : goal
         )
+        if let coverPayload {
+          let path = try await repositories.attachments.uploadBookCover(bookId: id, image: coverPayload)
+          try await repositories.books.setCoverPath(id: id, path: path)
+        }
       case .join:
         id = try await repositories.invites.join(token: extractToken(inviteInput))
       }

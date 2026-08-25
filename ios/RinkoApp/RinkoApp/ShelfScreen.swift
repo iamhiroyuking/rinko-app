@@ -20,6 +20,7 @@ struct ShelfScreen: View {
   @State private var shelf: [ShelfBook] = []
   @State private var upcoming: [UpcomingUnit] = []
   @State private var newCounts: [String: Int] = [:]
+  @State private var coverURLs: [String: URL] = [:]
   @State private var status: ShelfStatus = .reading
   @State private var errorMessage: String?
   @State private var showingAddBook = false
@@ -56,7 +57,7 @@ struct ShelfScreen: View {
           NavigationLink {
             BookSummaryScreen(bookId: book.id, repositories: repositories)
           } label: {
-            ShelfRow(book: book, newCount: newCounts[book.id] ?? 0)
+            ShelfRow(book: book, newCount: newCounts[book.id] ?? 0, coverURL: coverURLs[book.id])
           }
         }
       }
@@ -95,6 +96,11 @@ struct ShelfScreen: View {
       if status == .reading {
         upcoming = try await repositories.activity.listUpcoming()
         newCounts = try await repositories.activity.countNewLogs()
+      }
+
+      let paths = shelf.compactMap { $0.coverStoragePath }
+      if !paths.isEmpty {
+        coverURLs = try await repositories.attachments.signedURLs(paths: paths)
       }
     } catch {
       errorMessage = (error as? RinkoError)?.message ?? error.localizedDescription
@@ -139,15 +145,27 @@ private struct UpcomingRow: View {
 private struct ShelfRow: View {
   let book: ShelfBook
   let newCount: Int
+  let coverURL: URL?
 
   var body: some View {
     HStack(spacing: 12) {
-      // 表紙はまだ繋いでいないので、Web版と同じく本の絵で代替する
-      Image(systemName: "book")
-        .font(.title3)
-        .foregroundStyle(.secondary)
-        .frame(width: 44, height: 58)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+      Group {
+        if let coverURL {
+          AsyncImage(url: coverURL) { image in
+            image.resizable().scaledToFill()
+          } placeholder: {
+            Color.clear
+          }
+        } else {
+          // 表紙が無い教材は本の絵で代替する
+          Image(systemName: "book")
+            .font(.title3)
+            .foregroundStyle(.secondary)
+        }
+      }
+      .frame(width: 44, height: 58)
+      .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+      .clipShape(RoundedRectangle(cornerRadius: 6))
 
       VStack(alignment: .leading, spacing: 3) {
         Text(book.title).font(.callout.weight(.semibold))
