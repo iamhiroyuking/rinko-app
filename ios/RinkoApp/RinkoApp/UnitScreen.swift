@@ -91,6 +91,7 @@ struct UnitScreen: View {
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
         Button { showingNewLog = true } label: { Image(systemName: "square.and.pencil") }
+          .accessibilityLabel("発言する")
       }
     }
     .refreshable { await load() }
@@ -266,6 +267,7 @@ private struct LogCard: View {
           Image(systemName: isMarked ? "bookmark.fill" : "ellipsis.circle")
             .foregroundStyle(isMarked ? .yellow : .secondary)
         }
+        .accessibilityLabel("この記録のメニュー")
       }
 
       if let title = log.title {

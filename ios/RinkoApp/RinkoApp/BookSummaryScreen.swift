@@ -117,9 +117,14 @@ struct BookSummaryScreen: View {
           Button {
             goToSeminar = true
           } label: {
-            Label("学習を開始する", systemImage: "arrow.right.circle.fill")
+            Text("学習を開始する")
+              .font(.headline)
+              .frame(maxWidth: .infinity)
           }
-          .font(.headline)
+          .buttonStyle(.borderedProminent)
+          .listRowInsets(EdgeInsets())
+          .listRowBackground(Color.clear)
+          .padding(.vertical, 4)
         }
 
         Section {
