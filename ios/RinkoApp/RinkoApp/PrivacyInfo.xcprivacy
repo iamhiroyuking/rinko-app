@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Appleが2024年以降のApp Store提出で求めるプライバシーマニフェスト。
+
+	  アプリ本体（RinkoAppターゲット）のコードは、必須理由API
+	  （NSPrivacyAccessedAPITypes の対象になるもの。UserDefaults・
+	  ファイルのタイムスタンプ・システムの起動時刻など）を直接呼んで
+	  いないため、NSPrivacyAccessedAPITypes は空にしてある。
+
+	  依存ライブラリ（supabase-swift・swift-crypto など）は、それぞれの
+	  Swift Packageが個別に PrivacyInfo.xcprivacy を同梱しており、
+	  ビルド時にXcodeが自動的に集約する。ここに重ねて書く必要はない。
+
+	  収集しているのはメールアドレス（ログイン）と、利用者が書いた
+	  記録・表示名（アプリの中身そのもの）。広告・トラッキングSDKは
+	  使っておらず、第三者へは渡さない。
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

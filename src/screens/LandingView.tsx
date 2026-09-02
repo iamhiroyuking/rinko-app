@@ -104,7 +104,7 @@ export default function LandingView() {
           >
             ソースコードと開発の記録
           </a>
-          ）
+          ） ・ <Link to="/privacy">プライバシーポリシー</Link>
         </div>
       </main>
     </div>

@@ -15,6 +15,7 @@ import AddLogView from './screens/AddLogView'
 import SearchView from './screens/SearchView'
 import TrashView from './screens/TrashView'
 import SettingsView from './screens/SettingsView'
+import PrivacyPolicyView from './screens/PrivacyPolicyView'
 
 /**
  * URLと画面の対応表。
@@ -39,6 +40,9 @@ export default function App() {
               ログイン済みには本棚を出すため（#114）。振り分けは RootView 側。
               紹介ページは静的な文章だけで、教材の情報は含まない */}
           <Route path="/" element={<RootView />} />
+          {/* App Store審査やログイン前に確認したい人のため、関門の外に置く。
+              こちらも教材や記録の中身は一切出さない */}
+          <Route path="/privacy" element={<PrivacyPolicyView />} />
 
           <Route element={<RequireLogin />}>
             <Route path="/books/new" element={<AddBookView />} />

@@ -29,10 +29,19 @@ targets:
     configFiles:
       Debug: ../Secrets.xcconfig
       Release: ../Secrets.xcconfig
+    settings:
+      base:
+        # Assets.xcassets の AppIcon.appiconset を使う。単一の1024pxを
+        # 置くだけで、Xcodeが各サイズを生成する（iOS 17+の単一サイズ運用）
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
     info:
       path: RinkoApp/Info.plist
       properties:
         CFBundleDisplayName: 輪講
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # xcconfig が値の中の `//` をコメントとして食べるので、
         # スキームとホストを分けて受け取り、ここで組み立てる
         SUPABASE_URL: $(SUPABASE_SCHEME)://$(SUPABASE_HOST)
@@ -44,3 +53,7 @@ targets:
         # `rinko://join/<token>` と `rinko://reset-password` を受ける
         CFBundleURLTypes:
           - CFBundleURLSchemes: [rinko]
+        # 標準のTLS（Supabaseとの通信）以外の独自暗号は使っていない。
+        # これが無いと、提出のたびに輸出コンプライアンスの質問に
+        # 手で答える必要がある
+        ITSAppUsesNonExemptEncryption: false
