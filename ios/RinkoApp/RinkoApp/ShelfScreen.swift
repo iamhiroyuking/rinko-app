@@ -16,6 +16,8 @@ import SwiftUI
 struct ShelfScreen: View {
   let repositories: AppRepositories
   let userId: String
+  /// ログアウト・アカウント削除で呼ぶ。関門を閉じる役目（`RootScreen` 側）
+  let onSignedOut: () -> Void
 
   @State private var shelf: [ShelfBook] = []
   @State private var upcoming: [UpcomingUnit] = []
@@ -24,6 +26,7 @@ struct ShelfScreen: View {
   @State private var status: ShelfStatus = .reading
   @State private var errorMessage: String?
   @State private var showingAddBook = false
+  @State private var showingSettings = false
   @State private var hasLoaded = false
 
   var body: some View {
@@ -82,6 +85,11 @@ struct ShelfScreen: View {
           Label("ゴミ箱", systemImage: "trash")
         }
       }
+      ToolbarItem(placement: .secondaryAction) {
+        Button { showingSettings = true } label: {
+          Label("設定", systemImage: "gearshape")
+        }
+      }
     }
     .refreshable { await load() }
     .task { await load() }
@@ -90,6 +98,9 @@ struct ShelfScreen: View {
       AddBookScreen(repositories: repositories) { _ in
         Task { await load() }
       }
+    }
+    .sheet(isPresented: $showingSettings) {
+      SettingsScreen(repositories: repositories, onSignedOut: onSignedOut)
     }
     .alert("読み込めませんでした", isPresented: .constant(errorMessage != nil)) {
       Button("閉じる") { errorMessage = nil }
@@ -203,6 +214,6 @@ private struct ShelfRow: View {
 
 #Preview {
   NavigationStack {
-    ShelfScreen(repositories: .preview, userId: PreviewData.me)
+    ShelfScreen(repositories: .preview, userId: PreviewData.me, onSignedOut: {})
   }
 }

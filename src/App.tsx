@@ -14,6 +14,7 @@ import UnitView from './screens/UnitView'
 import AddLogView from './screens/AddLogView'
 import SearchView from './screens/SearchView'
 import TrashView from './screens/TrashView'
+import SettingsView from './screens/SettingsView'
 
 /**
  * URLと画面の対応表。
@@ -69,6 +70,7 @@ export default function App() {
             />
             <Route path="/books/:bookId/search" element={<SearchView />} />
             <Route path="/trash" element={<TrashView />} />
+            <Route path="/settings" element={<SettingsView />} />
           </Route>
         </Routes>
       </BrowserRouter>

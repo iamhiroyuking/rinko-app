@@ -241,6 +241,7 @@ export default function HomeView() {
               },
             ]),
         { label: 'ゴミ箱', to: '/trash' },
+        { label: '設定', to: '/settings' },
       ]}
       footNote={
         profile ? `${profile.display_name} としてログイン中` : undefined
