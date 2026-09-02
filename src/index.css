@@ -610,6 +610,35 @@ body {
   gap: 0.25rem;
 }
 
+.markdown-help {
+  margin-top: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.markdown-help summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.markdown-help-table {
+  margin-top: 0.4rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.markdown-help-table td {
+  padding: 0.25rem 0.6rem 0.25rem 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.markdown-help-table td:first-child {
+  font-family: monospace;
+  white-space: nowrap;
+  color: var(--fg);
+}
+
 /*
   プレビュー。入力欄と高さが揃っていないと、切り替えるたびに
   下のボタンが飛ぶ。最低限の高さを入力欄に合わせておく。
@@ -874,6 +903,13 @@ mark {
   align-items: baseline;
   gap: 0.45rem;
   flex-wrap: wrap;
+}
+
+/* 返信カードの先頭に出す「誰への返信か」。読み流せる程度に控えめに */
+.log-reply-to {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 /* 読み上げには残すが目には見せない。絵文字だけのボタンの説明に使う */

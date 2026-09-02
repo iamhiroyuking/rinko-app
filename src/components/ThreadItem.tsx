@@ -197,6 +197,7 @@ export default function ThreadItem({
                     attachmentUrls={attachmentUrls}
                     isMarked={markedLogIds.has(reply.id)}
                     onToggleMark={() => onToggleMark(reply.id)}
+                    replyToAuthorName={nameOf(thread.root.authorId)}
                     footer={
                       <div className="log-actions">
                         {ownLogActions(reply, 0)}

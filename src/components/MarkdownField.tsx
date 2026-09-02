@@ -131,6 +131,50 @@ export default function MarkdownField({
         </div>
       </div>
 
+      {/*
+        「ボタン2つ（箇条書き・太字）だけでは記法が分からない」という声から
+        追加（実使用で出た指摘）。別ページにすると、書きかけの本文を
+        離れて見に行くことになり本末転倒なので、その場で開ける <details> にした。
+        ここに載せるのは実際に効く記法だけ。remark-gfm は入れていないので
+        取り消し線・テーブルは書いても効かない（動機は#7と同じ、要検討）。
+      */}
+      <details className="markdown-help">
+        <summary>書き方（Markdown）</summary>
+        <table className="markdown-help-table">
+          <tbody>
+            <tr>
+              <td># 見出し</td>
+              <td>見出し</td>
+            </tr>
+            <tr>
+              <td>**太字**</td>
+              <td>
+                <strong>太字</strong>
+              </td>
+            </tr>
+            <tr>
+              <td>- 項目</td>
+              <td>箇条書き</td>
+            </tr>
+            <tr>
+              <td>1. 項目</td>
+              <td>番号付きの箇条書き</td>
+            </tr>
+            <tr>
+              <td>&gt; 引用</td>
+              <td>引用</td>
+            </tr>
+            <tr>
+              <td>[表示名](URL)</td>
+              <td>リンク</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="panel-note">
+          改行はそのまま反映されます。数式・取り消し線・表・黄色のハイライトは今のところ書けません。
+        </p>
+      </details>
+
       {preview ? (
         // 空のまま切り替えると何も出ず、壊れたように見える
         <div className="editor-preview">

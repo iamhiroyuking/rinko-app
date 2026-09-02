@@ -79,6 +79,25 @@ export async function uploadLogImages(
 }
 
 /**
+ * 添付を1件だけ消す。編集画面で「この画像を消す」を押したときに使う。
+ *
+ * ストレージから先に消す。記録の行を先に消すと、ストレージだけが
+ * 残って辿れなくなるファイルができるため（他の後片付け関数と同じ順序）。
+ */
+export async function removeAttachment(attachment: Attachment): Promise<void> {
+  const { error: removeError } = await supabase.storage
+    .from(BUCKET)
+    .remove([attachment.storagePath])
+  if (removeError) throw removeError
+
+  const { error } = await supabase
+    .from('attachments')
+    .delete()
+    .eq('id', attachment.id)
+  if (error) throw error
+}
+
+/**
  * そのログと、その返信に付いている画像を消す。ログを削除する前に呼ぶ。
  *
  * 返信の分も一緒に消すのは、ログを消すと返信も連鎖して消えるため
