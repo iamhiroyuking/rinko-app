@@ -307,6 +307,54 @@ body {
   border-radius: 0.6rem;
 }
 
+/*
+ * 発言の投稿・編集をモーダルにした（実際に使っていて出た指摘。
+ * 別画面に飛ぶと書きかけの一覧の文脈を見失う）。
+ * `<dialog>` の既定の見た目（枠線・中央寄せ以外）をリセットしてから、
+ * 他のパネルと揃った角丸・影を付けている。
+ */
+.modal {
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0;
+  max-width: 30rem;
+  width: min(92vw, 30rem);
+  max-height: 88vh;
+  color: var(--fg);
+  background: var(--bg);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.22);
+}
+
+.modal::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.modal-content {
+  overflow-y: auto;
+  max-height: 88vh;
+  padding: 1.25rem;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.modal-close {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.15rem 0.5rem;
+}
+
 .panel-title {
   margin: 0;
   font-size: 0.8125rem;
@@ -794,6 +842,16 @@ body {
   text-decoration: none;
 }
 
+/*
+ * 「編集」「詳しく書く」は Link から button（.quiet-button）に変えた
+ * ものがある（モーダル化のため）。.quiet-button の min-height / padding が
+ * ここより強く効いてしまわないよう、詳細度を上げて明示的に上書きする。
+ */
+.quiet-button.log-action-link {
+  min-height: 1.9rem;
+  padding: 0;
+}
+
 .log-action-link:hover {
   color: var(--fg);
 }
@@ -1069,6 +1127,22 @@ mark {
 .log-body td {
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--line);
+}
+
+/*
+  回の並び順。ラベルと選択欄を横並びにして、一覧の幅を圧迫しない。
+  `.field` は縦並び（flex-direction: column）が既定なので、
+  詳細度を上げて確実に上書きする（定義順に依存させない）。
+*/
+.field.sort-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.sort-field select {
+  width: auto;
 }
 
 .unit-list {

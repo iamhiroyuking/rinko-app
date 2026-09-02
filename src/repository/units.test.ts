@@ -2,16 +2,21 @@ import { describe, expect, it } from 'vitest'
 import {
   countProgress,
   findNextUnit,
+  sortUnits,
   type Unit,
   type UnitStatus,
 } from './units'
 
 /** テスト用の回。関係のない項目は既定値で埋める */
-function unit(order: number, status: UnitStatus): Unit {
+function unit(
+  order: number,
+  status: UnitStatus,
+  overrides: Partial<Pick<Unit, 'title' | 'createdAt'>> = {},
+): Unit {
   return {
     id: `unit-${order}`,
     order,
-    title: `第${order}回`,
+    title: overrides.title ?? `第${order}回`,
     objective: null,
     presenterId: null,
     scheduledDate: null,
@@ -20,6 +25,8 @@ function unit(order: number, status: UnitStatus): Unit {
     pageFrom: null,
     pageTo: null,
     startNote: null,
+    createdAt:
+      overrides.createdAt ?? `2026-08-${String(order).padStart(2, '0')}`,
   }
 }
 
@@ -76,5 +83,44 @@ describe('findNextUnit', () => {
   it('完了した回が後ろに残っていても、前の未完了を優先する', () => {
     const units = [unit(1, 'done'), unit(2, 'not_started'), unit(3, 'done')]
     expect(findNextUnit(units)?.order).toBe(2)
+  })
+})
+
+describe('sortUnits', () => {
+  it('番号順は order の昇順', () => {
+    const units = [
+      unit(3, 'not_started'),
+      unit(1, 'not_started'),
+      unit(2, 'not_started'),
+    ]
+    expect(sortUnits(units, 'order').map((u) => u.order)).toEqual([1, 2, 3])
+  })
+
+  it('作成日順は createdAt の昇順（番号と対応していなくてもよい）', () => {
+    const units = [
+      unit(1, 'not_started', { createdAt: '2026-08-20' }),
+      unit(2, 'not_started', { createdAt: '2026-08-01' }),
+      unit(3, 'not_started', { createdAt: '2026-08-10' }),
+    ]
+    expect(sortUnits(units, 'createdAt').map((u) => u.order)).toEqual([2, 3, 1])
+  })
+
+  it('タイトル順は日本語のロケールで比較する', () => {
+    const units = [
+      unit(1, 'not_started', { title: 'う' }),
+      unit(2, 'not_started', { title: 'あ' }),
+      unit(3, 'not_started', { title: 'い' }),
+    ]
+    expect(sortUnits(units, 'title').map((u) => u.title)).toEqual([
+      'あ',
+      'い',
+      'う',
+    ])
+  })
+
+  it('元の配列を書き換えない', () => {
+    const units = [unit(2, 'not_started'), unit(1, 'not_started')]
+    sortUnits(units, 'order')
+    expect(units.map((u) => u.order)).toEqual([2, 1])
   })
 })
