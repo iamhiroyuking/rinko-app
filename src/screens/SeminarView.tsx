@@ -8,9 +8,13 @@ import { listBookMembers, type BookMember } from '../repository/members'
 import {
   countProgress,
   listUnits,
+  sortUnits,
   trashUnit,
+  UNIT_SORT_LABEL,
+  UNIT_SORT_ORDERS,
   UNIT_STATUS_LABEL,
   type Unit,
+  type UnitSortOrder,
 } from '../repository/units'
 import { errorMessage } from '../lib/errorMessage'
 import { countNewLogsByUnit, touchSeenAt } from '../repository/activity'
@@ -55,6 +59,11 @@ export default function SeminarView() {
   const [state, setState] = useState<LoadState>({ status: 'loading' })
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  /**
+   * 並び順（実際に使っていて出た指摘。第N回の番号でしか並べられなかった）。
+   * ページ順の切り替え（UnitView）と同じく、個人の見え方なので保存しない。
+   */
+  const [sortOrder, setSortOrder] = useState<UnitSortOrder>('order')
 
   /** 回id → 前回見てから増えた記録の数（#134） */
   const [newByUnit, setNewByUnit] = useState<Map<string, number>>(
@@ -195,57 +204,80 @@ export default function SeminarView() {
                 : 'まだ回がありません。'}
             </p>
           ) : (
-            <ul className="unit-list">
-              {state.units.map((unit) => {
-                const canDelete = canEdit && unit.createdBy === session?.user.id
-                const pageText = formatUnitPageRange(unit.pageFrom, unit.pageTo)
-                return (
-                  <li key={unit.id} className="unit-row-container">
-                    <Link
-                      className="unit-row"
-                      to={`/books/${bookId}/units/${unit.id}`}
-                    >
-                      <span className="unit-order">第{unit.order}回</span>
-                      <span className="unit-main">
-                        <span className="unit-title">{unit.title}</span>
-                        <span className="unit-meta">
-                          {nameOf(unit.presenterId)} ・{' '}
-                          {unit.scheduledDate ?? '日程未定'}
-                          {pageText && (
-                            <>
-                              {' '}
-                              ・ <span className="unit-pages">{pageText}</span>
-                            </>
-                          )}
-                          {/* 自由記述は日本語の文なので、数値の範囲と違って等幅にしない */}
-                          {unit.startNote && <> ・ {unit.startNote}</>}
-                        </span>
-                      </span>
-                      {/* 前回見てから増えた分（#134）。0のときは出さない */}
-                      {(newByUnit.get(unit.id) ?? 0) > 0 && (
-                        <span className="new-badge">
-                          新着 {newByUnit.get(unit.id)}
-                        </span>
-                      )}
-                      <span className={`pill status-${unit.status}`}>
-                        {UNIT_STATUS_LABEL[unit.status]}
-                      </span>
-                    </Link>
-                    {canDelete && (
-                      <button
-                        type="button"
-                        className="row-delete-button"
-                        aria-label={`第${unit.order}回を削除`}
-                        onClick={() => handleDelete(unit)}
-                        disabled={deletingId === unit.id}
+            <>
+              <div className="field sort-field">
+                <label htmlFor="unit-sort">並び順</label>
+                <select
+                  id="unit-sort"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(e.target.value as UnitSortOrder)
+                  }
+                >
+                  {UNIT_SORT_ORDERS.map((value) => (
+                    <option key={value} value={value}>
+                      {UNIT_SORT_LABEL[value]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <ul className="unit-list">
+                {sortUnits(state.units, sortOrder).map((unit) => {
+                  const canDelete =
+                    canEdit && unit.createdBy === session?.user.id
+                  const pageText = formatUnitPageRange(
+                    unit.pageFrom,
+                    unit.pageTo,
+                  )
+                  return (
+                    <li key={unit.id} className="unit-row-container">
+                      <Link
+                        className="unit-row"
+                        to={`/books/${bookId}/units/${unit.id}`}
                       >
-                        <IconTrash />
-                      </button>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+                        <span className="unit-order">第{unit.order}回</span>
+                        <span className="unit-main">
+                          <span className="unit-title">{unit.title}</span>
+                          <span className="unit-meta">
+                            {nameOf(unit.presenterId)} ・{' '}
+                            {unit.scheduledDate ?? '日程未定'}
+                            {pageText && (
+                              <>
+                                {' '}
+                                ・{' '}
+                                <span className="unit-pages">{pageText}</span>
+                              </>
+                            )}
+                            {/* 自由記述は日本語の文なので、数値の範囲と違って等幅にしない */}
+                            {unit.startNote && <> ・ {unit.startNote}</>}
+                          </span>
+                        </span>
+                        {/* 前回見てから増えた分（#134）。0のときは出さない */}
+                        {(newByUnit.get(unit.id) ?? 0) > 0 && (
+                          <span className="new-badge">
+                            新着 {newByUnit.get(unit.id)}
+                          </span>
+                        )}
+                        <span className={`pill status-${unit.status}`}>
+                          {UNIT_STATUS_LABEL[unit.status]}
+                        </span>
+                      </Link>
+                      {canDelete && (
+                        <button
+                          type="button"
+                          className="row-delete-button"
+                          aria-label={`第${unit.order}回を削除`}
+                          onClick={() => handleDelete(unit)}
+                          disabled={deletingId === unit.id}
+                        >
+                          <IconTrash />
+                        </button>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </>
           )}
         </>
       )}

@@ -19,6 +19,7 @@ export type Unit = {
   pageTo: number | null
   /** 「p.27の章末2.3から」のような、人が読むための開始箇所。数値のページ範囲とは別枠 */
   startNote: string | null
+  createdAt: string
 }
 
 export const UNIT_STATUS_LABEL: Record<UnitStatus, string> = {
@@ -67,6 +68,40 @@ export function findNextUnit(units: Unit[]): Unit | null {
   return units.find((unit) => unit.status !== 'done') ?? null
 }
 
+/**
+ * 回の並べ方（実際に使っていて出た指摘。第N回の番号で固定するしかなかった）。
+ *
+ * 番号そのものは変えない・手動ドラッグの並べ替えもしない、という決定は
+ * そのまま。ここで変わるのは**表示の並び順だけ**。番号を正とする考え方と
+ * 矛盾しない。
+ */
+export type UnitSortOrder = 'order' | 'createdAt' | 'title'
+
+export const UNIT_SORT_LABEL: Record<UnitSortOrder, string> = {
+  order: '番号順',
+  createdAt: '作成日順',
+  title: 'タイトル順',
+}
+
+export const UNIT_SORT_ORDERS: UnitSortOrder[] = ['order', 'createdAt', 'title']
+
+/**
+ * 渡された配列は変えず、並べ替えた新しい配列を返す。
+ *
+ * countProgress と同じくデータ取得を伴わない純粋な関数にしてある。
+ */
+export function sortUnits(units: Unit[], sortOrder: UnitSortOrder): Unit[] {
+  const sorted = [...units]
+  switch (sortOrder) {
+    case 'order':
+      return sorted.sort((a, b) => a.order - b.order)
+    case 'createdAt':
+      return sorted.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    case 'title':
+      return sorted.sort((a, b) => a.title.localeCompare(b.title, 'ja'))
+  }
+}
+
 function toUnit(row: UnitRow): Unit {
   return {
     id: row.id,
@@ -80,6 +115,7 @@ function toUnit(row: UnitRow): Unit {
     pageFrom: row.page_from,
     pageTo: row.page_to,
     startNote: row.start_note,
+    createdAt: row.created_at,
   }
 }
 

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import ScreenFrame from '../components/ScreenFrame'
 import BodyForm from '../components/BodyForm'
+import Modal from '../components/Modal'
+import LogComposer from '../components/LogComposer'
 import UnitStatePanel from '../components/UnitStatePanel'
 import ThreadItem from '../components/ThreadItem'
 import { useSession } from '../auth/SessionContext'
@@ -55,6 +57,16 @@ export default function UnitView() {
   const [startNoteInput, setStartNoteInput] = useState('')
   const [pagesBusy, setPagesBusy] = useState(false)
   const [pagesError, setPagesError] = useState<string | null>(null)
+
+  /**
+   * 「詳しく書く」「編集」で開くモーダルの状態。
+   *
+   * 以前は別画面（`AddLogView`）に遷移していたが、書きかけの一覧の
+   * 文脈を見失うという指摘があり、モーダルにした。URLに直接来たとき
+   * （ブックマーク・リロード）のために `AddLogView` 自体は残っている。
+   */
+  type ComposerMode = { type: 'new' } | { type: 'edit'; logId: string }
+  const [composerMode, setComposerMode] = useState<ComposerMode | null>(null)
 
   /** 返信フォームを開いているログのid。null なら閉じている */
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -487,12 +499,13 @@ export default function UnitView() {
             {log.resolvedAt ? '未解決に戻す' : '解決した'}
           </button>
         )}
-        <Link
-          className="log-action-link"
-          to={`/books/${bookId}/units/${unitId}/logs/${log.id}/edit`}
+        <button
+          type="button"
+          className="quiet-button log-action-link"
+          onClick={() => setComposerMode({ type: 'edit', logId: log.id })}
         >
           編集
-        </Link>
+        </button>
         <button
           type="button"
           className="quiet-button danger log-action-button"
@@ -547,6 +560,21 @@ export default function UnitView() {
     } finally {
       setQuickBusy(false)
     }
+  }
+
+  /**
+   * モーダル（詳しく書く／編集）で保存できたときに呼ばれる。
+   * 一覧を読み直し、モーダルを閉じ、保存した記録までスクロールする。
+   * submitQuickPost と同じパターン（下の useEffect で運ぶ）。
+   */
+  async function handleComposerSaved(savedLogId: string) {
+    if (!unitId) return
+    const refreshed = await listLogs(unitId)
+    setState((prev) =>
+      prev.status === 'ok' ? { ...prev, logs: refreshed } : prev,
+    )
+    setComposerMode(null)
+    setNewLogId(savedLogId)
   }
 
   function openReply(logId: string) {
@@ -678,12 +706,13 @@ export default function UnitView() {
               error={quickError}
               compact
               labelAction={
-                <Link
-                  className="log-action-link"
-                  to={`/books/${bookId}/units/${unitId}/logs/new`}
+                <button
+                  type="button"
+                  className="quiet-button log-action-link"
+                  onClick={() => setComposerMode({ type: 'new' })}
                 >
                   詳しく書く
-                </Link>
+                </button>
               }
             />
           )}
@@ -766,6 +795,20 @@ export default function UnitView() {
             </ul>
           )}
         </>
+      )}
+
+      {composerMode && bookId && unitId && (
+        <Modal onClose={() => setComposerMode(null)}>
+          <LogComposer
+            bookId={bookId}
+            unitId={unitId}
+            logId={
+              composerMode.type === 'edit' ? composerMode.logId : undefined
+            }
+            onSaved={handleComposerSaved}
+            onClose={() => setComposerMode(null)}
+          />
+        </Modal>
       )}
     </ScreenFrame>
   )
