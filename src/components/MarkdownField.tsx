@@ -136,7 +136,8 @@ export default function MarkdownField({
         追加（実使用で出た指摘）。別ページにすると、書きかけの本文を
         離れて見に行くことになり本末転倒なので、その場で開ける <details> にした。
         ここに載せるのは実際に効く記法だけ。remark-gfm は入れていないので
-        取り消し線・テーブルは書いても効かない（動機は#7と同じ、要検討）。
+        取り消し線・テーブルは書いても効かない。黄色のハイライトは
+        Markdown標準に無い拡張構文が要るため見送った。
       */}
       <details className="markdown-help">
         <summary>書き方（Markdown）</summary>
@@ -168,10 +169,18 @@ export default function MarkdownField({
               <td>[表示名](URL)</td>
               <td>リンク</td>
             </tr>
+            <tr>
+              <td>$x^2$</td>
+              <td>数式（文中）</td>
+            </tr>
+            <tr>
+              <td>$$x^2$$</td>
+              <td>数式（独立した行）</td>
+            </tr>
           </tbody>
         </table>
         <p className="panel-note">
-          改行はそのまま反映されます。数式・取り消し線・表・黄色のハイライトは今のところ書けません。
+          改行はそのまま反映されます。数式はKaTeXの書き方に沿います。取り消し線・表・黄色のハイライトは今のところ書けません。
         </p>
       </details>
 

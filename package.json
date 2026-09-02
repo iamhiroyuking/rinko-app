@@ -15,11 +15,14 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
+    "katex": "^0.18.5",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.2",
-    "remark-breaks": "^4.0.0"
+    "rehype-katex": "^7.0.1",
+    "remark-breaks": "^4.0.0",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

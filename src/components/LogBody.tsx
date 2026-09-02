@@ -1,5 +1,8 @@
 import Markdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 
 type Props = {
   /** 記録の本文。Markdownとして解釈する */
@@ -22,12 +25,18 @@ type Props = {
  * `remark-breaks` を入れているのは既存の記録のため。Markdownは本来
  * 1つの改行を空白として畳むので、これが無いと今までプレーンテキストで
  * 書かれた記録の改行が消える。
+ *
+ * `rehype-katex` は `rehype-raw` とは別物で、上の防壁を崩さない。
+ * `remark-math` が `$...$` を数式のASTノードとして解析し、KaTeXが
+ * それを安全な（スクリプトを含まない）HTML/SVGに変換するだけなので、
+ * 書いた人が任意のHTMLを差し込む経路にはならない。
  */
 export default function LogBody({ children }: Props) {
   return (
     <div className="log-body">
       <Markdown
-        remarkPlugins={[remarkBreaks]}
+        remarkPlugins={[remarkBreaks, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           // 記録から外のページへ飛ぶときは別タブ。読んでいた位置を失わない
           a({ node: _node, ...props }) {
