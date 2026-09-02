@@ -72,10 +72,13 @@ struct RootScreen: View {
         }
       case .signedIn(let userId):
         NavigationStack(path: $path) {
-          ShelfScreen(repositories: repositories, userId: userId)
-            .navigationDestination(for: String.self) { bookId in
-              BookSummaryScreen(bookId: bookId, repositories: repositories)
-            }
+          ShelfScreen(
+            repositories: repositories, userId: userId,
+            onSignedOut: { state = .signedOut }
+          )
+          .navigationDestination(for: String.self) { bookId in
+            BookSummaryScreen(bookId: bookId, repositories: repositories)
+          }
         }
       }
     }

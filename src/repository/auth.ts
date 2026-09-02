@@ -70,6 +70,26 @@ export async function updatePassword(newPassword: string): Promise<void> {
 }
 
 /**
+ * 自分のアカウントを削除する（#145）。
+ *
+ * データベース側の `delete_my_account()` 関数を呼ぶ。投稿した記録は
+ * 残り、投稿者の表示だけが「退会したユーザー」に変わる（共有相手の
+ * スレッドを壊さないため）。引数を取らない関数なので、他人のアカウントを
+ * 消せる経路にはならない。
+ *
+ * 消えた本人の状態が端末に残らないよう、続けてサインアウトする。
+ * サインアウトが失敗しても、削除そのものは終わっているので投げない。
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const { error } = await supabase.rpc('delete_my_account')
+  if (error) throw error
+
+  await supabase.auth.signOut().catch(() => {
+    // 削除自体は済んでいる。サインアウトの失敗で使い勝手を損なわない
+  })
+}
+
+/**
  * ログイン状態が変わったときに呼ばれる。
  * 戻り値の関数を呼ぶと購読をやめる。
  */
