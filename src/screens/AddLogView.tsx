@@ -11,7 +11,12 @@ import {
   type LogType,
 } from '../repository/logs'
 import { parseTagNames } from '../repository/tags'
-import { uploadLogImages } from '../repository/attachments'
+import {
+  removeAttachment,
+  signAttachments,
+  uploadLogImages,
+  type SignedAttachment,
+} from '../repository/attachments'
 import { errorMessage } from '../lib/errorMessage'
 import { toPageNumber, validatePageRange } from '../lib/pageRange'
 import { ACCEPTED_TYPES, canDecode, checkImageFile } from '../lib/image'
@@ -59,6 +64,20 @@ export default function AddLogView() {
    */
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
 
+  /**
+   * 編集のとき、すでに付いている添付。
+   *
+   * ここから消したものは即座にストレージから消える（取り消せない）。
+   * 新しく選んだ画像（`images`）とは別に持つ。混ぜると「保存前の一覧」
+   * と「もう消えた一覧」の区別がつかなくなるため。
+   */
+  const [existingAttachments, setExistingAttachments] = useState<
+    SignedAttachment[]
+  >([])
+  const [removingAttachmentId, setRemovingAttachmentId] = useState<
+    string | null
+  >(null)
+
   useEffect(() => {
     const urls = images.map((file) => URL.createObjectURL(file))
     setPreviewUrls(urls)
@@ -75,7 +94,7 @@ export default function AddLogView() {
     let cancelled = false
 
     getLog(logId)
-      .then((log) => {
+      .then(async (log) => {
         if (cancelled) return
         if (!log) {
           setError('この記録は見つかりませんでした。')
@@ -88,6 +107,10 @@ export default function AddLogView() {
         setPageStart(log.pageStart !== null ? String(log.pageStart) : '')
         setPageEnd(log.pageEnd !== null ? String(log.pageEnd) : '')
         setTagInput(log.tagNames.join(' '))
+
+        const signed = await signAttachments(log.attachments)
+        if (cancelled) return
+        setExistingAttachments(signed)
         setLoading(false)
       })
       .catch((caught: unknown) => {
@@ -125,6 +148,15 @@ export default function AddLogView() {
           pageEnd: end,
           tagNames,
         })
+
+        // 新しく選んだ分だけ足す。既存の添付は removeExisting で
+        // その場で消しているので、ここでは触らない
+        if (bookId && images.length > 0) {
+          setPostedLogId(logId)
+          setUploading(true)
+          await uploadLogImages(bookId, logId, images, setUploadedCount)
+        }
+
         navigate(`/books/${bookId}/units/${unitId}?log=${logId}`)
         return
       }
@@ -188,6 +220,33 @@ export default function AddLogView() {
   }
 
   /**
+   * すでに付いている添付を1件消す。取り消せないので確認する
+   * （教材・回の削除と同じ、素の window.confirm。#63時点で残っている
+   * 借りで、配色に合わないが頻度が低いため実害は小さいと判断している）。
+   */
+  async function removeExisting(attachment: SignedAttachment) {
+    if (!window.confirm('この画像を削除しますか？元に戻せません。')) return
+
+    setRemovingAttachmentId(attachment.id)
+    setError(null)
+    try {
+      await removeAttachment(attachment)
+      setExistingAttachments((prev) =>
+        prev.filter((a) => a.id !== attachment.id),
+      )
+    } catch (caught: unknown) {
+      setError(errorMessage(caught))
+    } finally {
+      setRemovingAttachmentId(null)
+    }
+  }
+
+  /** 保存前の選択から1枚外す。まだ送っていないのでファイルを外すだけでよい */
+  function removeSelected(index: number) {
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  /**
    * 失敗した画像だけ送り直す。
    *
    * 本文はもう投稿されているので作り直さない。済んだ枚数から先だけ送る。
@@ -203,7 +262,11 @@ export default function AddLogView() {
       await uploadLogImages(bookId, postedLogId, remaining, (count) =>
         setUploadedCount(uploadedCount + count),
       )
-      navigate(`/books/${bookId}/units/${unitId}`)
+      navigate(
+        isEditing
+          ? `/books/${bookId}/units/${unitId}?log=${postedLogId}`
+          : `/books/${bookId}/units/${unitId}`,
+      )
     } catch (caught: unknown) {
       setError(errorMessage(caught))
     } finally {
@@ -305,9 +368,43 @@ export default function AddLogView() {
           )}
         </div>
 
-        {/* 編集では画像に触れない。付け外しは別の操作にしている */}
-        <div className="field" hidden={isEditing}>
-          <label htmlFor="images">画像（任意）</label>
+        <div className="field">
+          {isEditing && existingAttachments.length > 0 && (
+            <>
+              <label>付いている画像</label>
+              <ul className="preview-list">
+                {existingAttachments.map((attachment) => (
+                  <li key={attachment.id} className="preview-item">
+                    {attachment.url ? (
+                      <img
+                        className="preview-image"
+                        src={attachment.url}
+                        alt={attachment.fileName}
+                      />
+                    ) : (
+                      <span className="preview-name">
+                        {attachment.fileName}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="quiet-button subtle"
+                      onClick={() => removeExisting(attachment)}
+                      disabled={removingAttachmentId === attachment.id}
+                    >
+                      {removingAttachmentId === attachment.id
+                        ? '削除中…'
+                        : 'この画像を削除'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          <label htmlFor="images">
+            {isEditing ? '画像を追加（任意）' : '画像（任意）'}
+          </label>
           <input
             id="images"
             type="file"
@@ -328,6 +425,13 @@ export default function AddLogView() {
                     alt={file.name}
                   />
                   <span className="preview-name">{file.name}</span>
+                  <button
+                    type="button"
+                    className="quiet-button subtle"
+                    onClick={() => removeSelected(index)}
+                  >
+                    選択から外す
+                  </button>
                 </li>
               ))}
             </ul>
@@ -341,18 +445,26 @@ export default function AddLogView() {
             送信ボタンは出さず、画像の送り直しだけを出す */}
         {postedLogId ? (
           <section className="panel">
-            <h2 className="panel-title">本文は投稿できています</h2>
+            <h2 className="panel-title">
+              {isEditing ? '内容は保存できています' : '本文は投稿できています'}
+            </h2>
             <p className="panel-note">
               画像{images.length}枚のうち{uploadedCount}
-              枚まで送れました。残りを送り直すか、画像なしのまま進めます。
+              枚まで送れました。残りを送り直すか、そのまま進めます。
             </p>
             <div className="button-row">
               <button
                 type="button"
                 className="quiet-button subtle"
-                onClick={() => navigate(`/books/${bookId}/units/${unitId}`)}
+                onClick={() =>
+                  navigate(
+                    isEditing
+                      ? `/books/${bookId}/units/${unitId}?log=${postedLogId}`
+                      : `/books/${bookId}/units/${unitId}`,
+                  )
+                }
               >
-                画像なしで進む
+                このまま進む
               </button>
               <button
                 type="button"

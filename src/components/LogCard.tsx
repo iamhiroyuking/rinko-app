@@ -33,6 +33,14 @@ type Props = {
   /** しおりが付いているか。渡さない画面ではしおりの操作を出さない */
   isMarked?: boolean
   onToggleMark?: () => void
+  /**
+   * 返信のときだけ渡す、返信先（親の記録）の投稿者名。
+   *
+   * 返信は親の下にインデントして表示しているが、返信だけを読んでいると
+   * 誰の発言への返信かを見失いやすい（実際に使っていて出た声）。
+   * カード自身に一言添えて、親を目で辿らなくても分かるようにする。
+   */
+  replyToAuthorName?: string
 }
 
 /**
@@ -49,6 +57,7 @@ export default function LogCard({
   attachmentUrls,
   isMarked = false,
   onToggleMark,
+  replyToAuthorName,
 }: Props) {
   const pages = formatPageRange(log.pageStart, log.pageEnd)
 
@@ -57,6 +66,9 @@ export default function LogCard({
       id={`log-${log.id}`}
       className={isFocused ? 'log-card focused' : 'log-card'}
     >
+      {replyToAuthorName && (
+        <p className="log-reply-to">{replyToAuthorName}さんへの返信</p>
+      )}
       <div className="log-head">
         <span className="log-author">{authorName}</span>
         {log.type !== 'none' && (
